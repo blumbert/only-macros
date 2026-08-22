@@ -12,7 +12,11 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.lumbert.macros",
       "infoPlist": {
-        "CFBundleDisplayName": "Macros"
+        "CFBundleDisplayName": "Macros",
+        "ITSAppUsesNonExemptEncryption": false
+      },
+      "config": {
+        "usesNonExemptEncryption": false
       }
     },
     "android": {
@@ -30,6 +34,11 @@
     },
     "plugins": [
       "expo-font"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "1532538c-8f85-4026-8fd2-a48c0b860749"
+      }
+    }
   }
 }
