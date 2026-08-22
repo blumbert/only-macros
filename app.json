@@ -1,17 +1,21 @@
 {
   "expo": {
-    "name": "MacroTracker",
-    "slug": "MacroTracker",
+    "name": "Macros",
+    "slug": "macros",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "scheme": "macros",
+    "userInterfaceStyle": "automatic",
+    "backgroundColor": "#0A0B0E",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.lumbert.macros"
     },
     "android": {
+      "package": "com.lumbert.macros",
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#0A0B0E",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
