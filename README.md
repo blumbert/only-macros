@@ -17,16 +17,31 @@ Then scan the QR code with **Expo Go** on your phone (App Store / Play Store).
 `npm run web` opens it in a browser, which is handy for checking layout but not
 representative of the real thing.
 
-### Why SDK 56 and not 57
+### Why SDK 54 and not the newest one
 
-Expo Go on the App Store only supports the newest SDK that Apple has actually
-approved. When this was set up, SDK 57 had shipped but its Expo Go build was
-still in review, so a 57 project gave "Project is incompatible with this version
-of Expo Go" on a fully up-to-date phone. Pinning to 56 sidesteps that.
+Expo Go on the App Store is stuck on **54.0.2 (released 2025-09-23)**, so it can
+only open SDK 54 projects. SDKs 55, 56 and 57 all exist, but their Expo Go
+builds were never published — a newer project just gives "Project is
+incompatible with this version of Expo Go" on a fully up-to-date phone.
 
-None of the app's code is version-specific. Once Expo Go for 57 is on the App
-Store, `npm install expo@^57.0.0 && npx expo install --fix` bumps it. This only
-affects Expo Go — an EAS build bundles its own runtime and doesn't care.
+Don't trust `sdkVersions[x].iosClientVersion` in Expo's version API; those are
+the clients Expo built, not the ones Apple published. The field that actually
+answers the question is `expoGoSdkVersion`:
+
+```bash
+curl -s https://api.expo.dev/v2/versions/latest | grep -o '"expoGoSdkVersion":"[^"]*"'
+```
+
+Cross-check it against the live App Store listing:
+
+```bash
+curl -s "https://itunes.apple.com/lookup?id=982107779" | grep -o '"version":"[^"]*"'
+```
+
+None of the app's code is version-specific, so `npm install expo@^NN.0.0 &&
+npx expo install --fix` moves it whenever Expo Go catches up. This constraint
+only exists because of Expo Go — an EAS build bundles its own runtime and can
+be on any SDK.
 
 ## How it works
 
