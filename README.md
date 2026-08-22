@@ -17,6 +17,17 @@ Then scan the QR code with **Expo Go** on your phone (App Store / Play Store).
 `npm run web` opens it in a browser, which is handy for checking layout but not
 representative of the real thing.
 
+### Why SDK 56 and not 57
+
+Expo Go on the App Store only supports the newest SDK that Apple has actually
+approved. When this was set up, SDK 57 had shipped but its Expo Go build was
+still in review, so a 57 project gave "Project is incompatible with this version
+of Expo Go" on a fully up-to-date phone. Pinning to 56 sidesteps that.
+
+None of the app's code is version-specific. Once Expo Go for 57 is on the App
+Store, `npm install expo@^57.0.0 && npx expo install --fix` bumps it. This only
+affects Expo Go — an EAS build bundles its own runtime and doesn't care.
+
 ## How it works
 
 | File | What it does |
