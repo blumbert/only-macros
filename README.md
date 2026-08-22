@@ -1,8 +1,14 @@
-# Macros
+# Only Macros
 
 A one-screen macro tracker. Type carbs, protein and fat, tap add, and the day's
 totals and calories update. A calendar button in the bottom right opens a month
 view with each day's macros and calories.
+
+The App Store listing is **Only Macros**; the home screen icon reads **Macros**.
+Those are separate fields: `expo.name` in `app.json` names the App Store Connect
+record, and `ios.infoPlist.CFBundleDisplayName` is what iOS prints under the
+icon. (Android takes its launcher label from `expo.name`, so it shows the long
+one — change `expo.name` if you'd rather it matched.)
 
 Built with Expo (React Native) so the same code ships to the App Store and Play
 Store, and so iOS builds can be produced from Windows via EAS.
@@ -68,24 +74,46 @@ undo can remove one add without the totals drifting.
 
 ## Shipping to the App Store from Windows
 
-You do not need a Mac — EAS builds on Apple hardware in the cloud.
+No Mac needed — EAS builds on Apple hardware in the cloud. `eas.json` is already
+configured, `eas-cli` is installed, and `npx expo-doctor` passes 18/18.
 
 ```bash
-npm install -g eas-cli
 eas login
-eas build:configure
 eas build --platform ios --profile production
-eas submit --platform ios
+eas submit --platform ios --latest
 ```
 
-Before the first submit:
+`eas login` uses an **Expo** account (free, unrelated to Apple). The build step
+asks for your Apple ID and generates the signing certificate and provisioning
+profile for you; let it. First build takes roughly 15-25 minutes including queue.
 
-1. Change `ios.bundleIdentifier` in `app.json` if you want something other than
-   `com.lumbert.macros` — it has to be globally unique and cannot be changed
-   after the app is created in App Store Connect.
-2. Replace `assets/icon.png` with a real 1024×1024 icon (no transparency, no
-   rounded corners — Apple applies the mask).
-3. Create the app record at appstoreconnect.apple.com, and prepare screenshots
-   for a 6.9" iPhone.
-4. Fill in App Privacy: this app collects nothing and sends nothing anywhere —
-   all data stays in local storage on the device.
+Then, at appstoreconnect.apple.com, fill in the listing and hit **Submit for
+Review**:
+
+- **Name**: Only Macros. **Category**: Health & Fitness.
+- **Screenshots**: one 6.9" iPhone set is the minimum. Take them on a real
+  device, or in the iOS simulator if you ever get Mac access.
+- **App Privacy**: "Data Not Collected". The app has no network code at all —
+  everything lives in `AsyncStorage` on the device.
+- **Support URL** is required. A GitHub repo page or a one-page site is fine.
+- **Sign-in**: say the app does not require one, and leave demo credentials blank.
+
+### Version bumps
+
+`appVersionSource` is `remote`, so EAS owns the build number and increments it
+automatically. Bump `expo.version` in `app.json` only for user-facing releases
+(1.0.0 → 1.0.1); never touch `buildNumber` by hand.
+
+### Regenerating the icons
+
+`assets/*.png` are generated, not drawn by hand — three pills in the carb,
+protein and fat colours on the app's dark ground. The generator lives at
+`scripts/make-icons.js`:
+
+```bash
+node scripts/make-icons.js ./assets
+```
+
+Colours and bar heights are the `BARS` array at the top. `icon.png` is written
+as RGB with no alpha channel on purpose: App Store Connect rejects app icons
+that carry one.
