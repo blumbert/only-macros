@@ -83,3 +83,26 @@ export function calories(t: Totals): number {
 export function isEmpty(t: Totals): boolean {
   return t.c === 0 && t.p === 0 && t.f === 0;
 }
+
+/**
+ * Union two logs, keeping every entry from both and de-duplicating by id.
+ *
+ * Needed because the UI renders before storage has been read: an entry added in
+ * that window lives only in memory, and a plain overwrite on hydrate would
+ * silently discard it.
+ */
+export function mergeLogs(a: Log, b: Log): Log {
+  const out: Log = { ...a };
+  for (const [day, entries] of Object.entries(b)) {
+    const existing = out[day];
+    if (!existing?.length) {
+      out[day] = entries;
+      continue;
+    }
+    const seen = new Set(existing.map((e) => e.id));
+    const merged = existing.concat(entries.filter((e) => !seen.has(e.id)));
+    merged.sort((x, y) => x.at - y.at);
+    out[day] = merged;
+  }
+  return out;
+}

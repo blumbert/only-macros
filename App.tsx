@@ -14,7 +14,12 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import {
+  initialWindowMetrics,
+  SafeAreaProvider,
+  SafeAreaView,
+  useSafeAreaInsets,
+} from 'react-native-safe-area-context';
 
 import { CalendarSheet } from './src/components/CalendarSheet';
 import { MacroField } from './src/components/MacroField';
@@ -43,9 +48,25 @@ function parse(value: string): number {
   return Number.isFinite(n) && n > 0 ? n : 0;
 }
 
+/**
+ * Haptics are best-effort. iPads have no Taptic Engine, and these calls are
+ * fire-and-forget, so a rejection here would surface as an unhandled promise
+ * rejection rather than anything the user could act on.
+ */
+function buzz(run: () => Promise<void>) {
+  try {
+    run().catch(() => {});
+  } catch {
+    // module unavailable on this device
+  }
+}
+
 export default function App() {
+  // initialMetrics matters: without it SafeAreaProvider renders *null* until
+  // the native side reports insets back, so anything that delays or drops that
+  // callback leaves the user staring at an empty screen.
   return (
-    <SafeAreaProvider>
+    <SafeAreaProvider initialMetrics={initialWindowMetrics}>
       <Screen />
     </SafeAreaProvider>
   );
@@ -54,7 +75,7 @@ export default function App() {
 function Screen() {
   const { c, isDark } = useTheme();
   const insets = useSafeAreaInsets();
-  const { log, today, hydrated, add, remove } = useLog();
+  const { log, today, add, remove } = useLog();
 
   const [draft, setDraft] = useState<Draft>(EMPTY_DRAFT);
   const [calendarOpen, setCalendarOpen] = useState(false);
@@ -80,15 +101,15 @@ function Screen() {
     const { day, entry } = add(values.c, values.p, values.f);
     setDraft(EMPTY_DRAFT);
     Keyboard.dismiss();
-    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setLastAdd({ day, id: entry.id, ...values });
+    buzz(() => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success));
   };
 
   const handleUndo = () => {
     if (!lastAdd) return;
     remove(lastAdd.day, lastAdd.id);
     setLastAdd(null);
-    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    buzz(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light));
   };
 
   // Undo pill: fades in on an add, then fades itself back out a few seconds later.
@@ -116,11 +137,6 @@ function Screen() {
     return () => clearTimeout(timer);
   }, [lastAdd, toastOpacity]);
 
-  // Nothing is drawn until the saved log is in memory, so totals never flash 0.
-  if (!hydrated) {
-    return <View style={{ flex: 1, backgroundColor: c.bg }} />;
-  }
-
   return (
     <SafeAreaView style={[styles.root, { backgroundColor: c.bg }]} edges={['top', 'left', 'right']}>
       <StatusBar style={isDark ? 'light' : 'dark'} />
@@ -135,6 +151,9 @@ function Screen() {
           keyboardDismissMode="interactive"
           showsVerticalScrollIndicator={false}
         >
+          {/* Capped and centred so the fields stay thumb-sized on an iPad
+              rather than stretching to a metre-wide row. */}
+          <View style={styles.content}>
           <View style={styles.header}>
             <Text style={[styles.title, { color: c.text }]}>Macros</Text>
             <Text style={[styles.subtitle, { color: c.muted }]}>{longDate(today)}</Text>
@@ -173,6 +192,7 @@ function Screen() {
 
           <View style={styles.totals}>
             <TotalsPanel totals={totals} dayLabel={describeDay(today, today)} />
+          </View>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -224,6 +244,7 @@ function Screen() {
 const styles = StyleSheet.create({
   root: { flex: 1 },
   scroll: { paddingHorizontal: 16, paddingTop: 8 },
+  content: { width: '100%', maxWidth: 560, alignSelf: 'center' },
   header: { paddingHorizontal: 4, paddingBottom: 18 },
   title: { fontSize: 30, fontWeight: '800', letterSpacing: -0.6 },
   subtitle: { fontSize: 14, fontWeight: '600', marginTop: 2 },

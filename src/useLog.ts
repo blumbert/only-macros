@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState, type AppStateStatus } from 'react-native';
 
 import { msUntilNextMidnight, todayKey, type DayKey } from './date';
-import { loadLog, saveLog, type Entry, type Log } from './storage';
+import { loadLog, mergeLogs, saveLog, type Entry, type Log } from './storage';
 
 let counter = 0;
 const newId = () => `${Date.now().toString(36)}-${(counter++).toString(36)}`;
@@ -12,12 +12,18 @@ export function useLog() {
   const [today, setToday] = useState<DayKey>(todayKey);
   const [hydrated, setHydrated] = useState(false);
 
-  // Load once on launch.
+  /**
+   * Load once on launch. The screen is interactive before this resolves — it
+   * must never gate rendering, or a slow or wedged read shows a blank app — so
+   * fold what was stored into whatever is already in memory instead of
+   * overwriting it. Without the merge, an entry added in that window would be
+   * silently discarded the moment storage came back.
+   */
   useEffect(() => {
     let alive = true;
     loadLog().then((stored) => {
       if (!alive) return;
-      setLog(stored);
+      setLog((current) => mergeLogs(stored, current));
       setHydrated(true);
     });
     return () => {

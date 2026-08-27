@@ -8,12 +8,11 @@ standing copy in the Notes field prevents them asking again.
 
 ## 2. Devices and operating systems tested
 
-Tested on a physical iPhone 14 running iOS <FILL IN — Settings > General >
-About > iOS Version> prior to submission, installed via TestFlight.
+Tested on a physical iPhone 14 running iOS 18.7.8 prior to submission, installed via TestFlight.
 
 ## 3. What the app does, and who it is for
 
-Only Macros is a single-screen manual food-logging utility for people who track
+Only Macros is a manual food-logging utility for people who track
 macronutrients — for example anyone following a diet plan set by a coach,
 dietitian or themselves.
 
@@ -22,16 +21,16 @@ database and navigating several screens per entry. People who already know their
 numbers, because they weigh and prep their own food, only need to add three
 values to a running daily total. This app is that and nothing else.
 
-The entire app is one screen:
+The app has two screens:
 
-- Three numeric fields, labelled C, P and F, for grams of carbohydrate, protein
-  and fat.
-- An "Add to today" button which adds those three numbers to the current day's
-  running total.
-- The day's totals, and the day's total calories, shown below. Calories are a
-  fixed arithmetic conversion: (carbs x 4) + (protein x 4) + (fat x 9).
-- A calendar button in the bottom-right corner, opening a month grid showing the
-  totals and calories recorded for each past day.
+- **Main screen** — three numeric fields, labelled C, P and F, for grams of
+  carbohydrate, protein and fat; an "Add to today" button which adds those three
+  numbers to the current day's running total; and the day's totals and total
+  calories shown below (a fixed arithmetic conversion: (carbs x 4) + (protein x
+  4) + (fat x 9)).
+- **Calendar** — opened via the button in the bottom-right corner, presented as a
+  modal sheet. Shows a month grid with the totals and calories recorded for each
+  past day; tapping a day shows its full breakdown.
 
 Days roll over at the device's local midnight.
 
