@@ -49,6 +49,15 @@ export function describeDay(key: DayKey, today: DayKey = todayKey()): string {
   return `${WEEKDAYS_SHORT[d.getDay()]}, ${MONTHS_SHORT[d.getMonth()]} ${d.getDate()}`;
 }
 
+/** "9:41 AM", in the device's local time. */
+export function formatTime(ms: number): string {
+  const d = new Date(ms);
+  const hour24 = d.getHours();
+  const hour = hour24 % 12 === 0 ? 12 : hour24 % 12;
+  const ampm = hour24 < 12 ? 'AM' : 'PM';
+  return `${hour}:${pad(d.getMinutes())} ${ampm}`;
+}
+
 export function longDate(key: DayKey): string {
   const d = fromDayKey(key);
   return `${WEEKDAYS_LONG[d.getDay()]}, ${MONTHS_LONG[d.getMonth()]} ${d.getDate()}`;

@@ -96,5 +96,19 @@ export function useLog() {
     });
   }, []);
 
-  return { log, today, hydrated, add, remove };
+  const update = useCallback(
+    (day: DayKey, id: string, values: { c: number; p: number; f: number }) => {
+      setLog((prev) => {
+        const entries = prev[day];
+        const index = entries?.findIndex((e) => e.id === id) ?? -1;
+        if (index === -1) return prev;
+        const next = entries!.slice();
+        next[index] = { ...next[index], ...values };
+        return { ...prev, [day]: next };
+      });
+    },
+    [],
+  );
+
+  return { log, today, hydrated, add, remove, update };
 }

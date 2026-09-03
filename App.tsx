@@ -23,8 +23,10 @@ import {
 
 import { CalendarSheet } from './src/components/CalendarSheet';
 import { MacroField } from './src/components/MacroField';
+import { RecentEntries } from './src/components/RecentEntries';
 import { TotalsPanel } from './src/components/TotalsPanel';
 import { describeDay, longDate, type DayKey } from './src/date';
+import { parseMacroInput, sanitizeMacroInput } from './src/macroInput';
 import { sumDay } from './src/storage';
 import { formatGrams, MACROS, useTheme, type MacroKey } from './src/theme';
 import { useLog } from './src/useLog';
@@ -32,21 +34,8 @@ import { useLog } from './src/useLog';
 type Draft = Record<MacroKey, string>;
 
 const EMPTY_DRAFT: Draft = { c: '', p: '', f: '' };
-
-/** Keeps a field to digits with at most one decimal point and one decimal place. */
-function sanitize(raw: string): string {
-  const cleaned = raw.replace(/[^0-9.]/g, '');
-  const dot = cleaned.indexOf('.');
-  if (dot === -1) return cleaned.slice(0, 4);
-  const whole = cleaned.slice(0, dot).slice(0, 4);
-  const frac = cleaned.slice(dot + 1).replace(/\./g, '').slice(0, 1);
-  return whole + '.' + frac;
-}
-
-function parse(value: string): number {
-  const n = parseFloat(value);
-  return Number.isFinite(n) && n > 0 ? n : 0;
-}
+const sanitize = sanitizeMacroInput;
+const parse = parseMacroInput;
 
 /**
  * Haptics are best-effort. iPads have no Taptic Engine, and these calls are
@@ -75,7 +64,7 @@ export default function App() {
 function Screen() {
   const { c, isDark } = useTheme();
   const insets = useSafeAreaInsets();
-  const { log, today, add, remove } = useLog();
+  const { log, today, add, remove, update } = useLog();
 
   const [draft, setDraft] = useState<Draft>(EMPTY_DRAFT);
   const [calendarOpen, setCalendarOpen] = useState(false);
@@ -193,6 +182,14 @@ function Screen() {
           <View style={styles.totals}>
             <TotalsPanel totals={totals} dayLabel={describeDay(today, today)} />
           </View>
+
+          <View style={styles.recent}>
+            <RecentEntries
+              entries={log[today] ?? []}
+              onSave={(id, values) => update(today, id, values)}
+              onDelete={(id) => remove(today, id)}
+            />
+          </View>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -262,6 +259,7 @@ const styles = StyleSheet.create({
   },
   addLabel: { fontSize: 16, fontWeight: '700' },
   totals: { marginTop: 22 },
+  recent: { marginTop: 16 },
   toastWrap: {
     position: 'absolute',
     left: 16,
