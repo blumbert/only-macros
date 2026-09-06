@@ -64,7 +64,7 @@ export default function App() {
 function Screen() {
   const { c, isDark } = useTheme();
   const insets = useSafeAreaInsets();
-  const { log, today, add, remove, update } = useLog();
+  const { log, today, add, addOn, setDayTotals, remove, update } = useLog();
 
   const [draft, setDraft] = useState<Draft>(EMPTY_DRAFT);
   const [calendarOpen, setCalendarOpen] = useState(false);
@@ -233,6 +233,9 @@ function Screen() {
         onClose={() => setCalendarOpen(false)}
         log={log}
         today={today}
+        onAdd={addOn}
+        onDelete={remove}
+        onSetTotals={setDayTotals}
       />
     </SafeAreaView>
   );

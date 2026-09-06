@@ -1,7 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
-import { Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
+import { confirmDestructive } from '../confirm';
 import { formatTime } from '../date';
 import { parseMacroInput, sanitizeMacroInput } from '../macroInput';
 import type { Entry } from '../storage';
@@ -48,14 +49,12 @@ export function RecentEntries({ entries, onSave, onDelete }: Props) {
 
   const confirmDelete = (entry: Entry) => {
     if (editingId === entry.id) setEditingId(null);
-    Alert.alert(
-      'Delete entry?',
-      `${formatGrams(entry.c)}C ${formatGrams(entry.p)}P ${formatGrams(entry.f)}F at ${formatTime(entry.at)}`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Delete', style: 'destructive', onPress: () => onDelete(entry.id) },
-      ],
-    );
+    confirmDestructive({
+      title: 'Delete entry?',
+      message: `${formatGrams(entry.c)}C ${formatGrams(entry.p)}P ${formatGrams(entry.f)}F at ${formatTime(entry.at)}`,
+      confirmLabel: 'Delete',
+      onConfirm: () => onDelete(entry.id),
+    });
   };
 
   return (

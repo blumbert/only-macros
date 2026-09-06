@@ -30,7 +30,11 @@ The app has two screens:
   4) + (fat x 9)).
 - **Calendar** — opened via the button in the bottom-right corner, presented as a
   modal sheet. Shows a month grid with the totals and calories recorded for each
-  past day; tapping a day shows its full breakdown.
+  past day; tapping a day shows its full breakdown. The pencil button at the top
+  right of that breakdown opens an editor for the selected day, where the day's
+  total can be typed in directly, macros can be added to a day that was missed,
+  and individual entries can be deleted. All of it is the user's own data,
+  stored on the device.
 
 Days roll over at the device's local midnight.
 
@@ -44,7 +48,8 @@ part of the app is gated.
 To exercise the full app: type any numbers into the three fields, tap "Add to
 today", and observe the totals and calorie figure update. Tap the calendar
 button in the bottom-right to view the month grid, and tap any day in it to see
-that day's breakdown.
+that day's breakdown. Tap the pencil at the top right of that breakdown to edit
+the day — set its total by hand, add macros to it, or delete an entry from it.
 
 ## 5. External services, tools or platforms
 

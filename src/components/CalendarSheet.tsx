@@ -1,6 +1,15 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useMemo, useState } from 'react';
-import { Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
@@ -13,18 +22,30 @@ import {
   type DayKey,
 } from '../date';
 import { calories, sumDay, type Log, type Totals } from '../storage';
-import { formatGrams, formatNumber, MACROS, useTheme } from '../theme';
+import { formatNumber, useTheme } from '../theme';
+import { DayCard } from './DayCard';
 
 type Props = {
   visible: boolean;
   onClose: () => void;
   log: Log;
   today: DayKey;
+  onAdd: (day: DayKey, values: Totals) => void;
+  onDelete: (day: DayKey, id: string) => void;
+  onSetTotals: (day: DayKey, values: Totals) => void;
 };
 
 type DayStat = { totals: Totals; kcal: number };
 
-export function CalendarSheet({ visible, onClose, log, today }: Props) {
+export function CalendarSheet({
+  visible,
+  onClose,
+  log,
+  today,
+  onAdd,
+  onDelete,
+  onSetTotals,
+}: Props) {
   const { c, isDark } = useTheme();
   const insets = useSafeAreaInsets();
 
@@ -88,8 +109,6 @@ export function CalendarSheet({ visible, onClose, log, today }: Props) {
       : 'rgba(13, 17, 23, ' + alpha.toFixed(3) + ')';
   };
 
-  const selectedStat = month.stats.get(selected) ?? null;
-
   return (
     <Modal
       visible={visible}
@@ -111,9 +130,15 @@ export function CalendarSheet({ visible, onClose, log, today }: Props) {
           </Pressable>
         </View>
 
+        <KeyboardAvoidingView
+          style={styles.flex}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        >
         <ScrollView
           contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 24 }]}
           showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="interactive"
         >
           <View style={styles.monthNav}>
             <NavButton
@@ -187,36 +212,14 @@ export function CalendarSheet({ visible, onClose, log, today }: Props) {
             })}
           </View>
 
-          <View style={[styles.detail, { backgroundColor: c.surface, borderColor: c.border }]}>
-            <Text style={[styles.detailDate, { color: c.text }]}>{longDate(selected)}</Text>
-            {selectedStat ? (
-              <>
-                <View style={styles.detailRow}>
-                  {MACROS.map((m) => (
-                    <View key={m.key} style={styles.detailCol}>
-                      <Text style={[styles.detailLetter, { color: c.macro[m.key] }]}>
-                        {m.letter}
-                      </Text>
-                      <Text style={[styles.detailValue, { color: c.text }]}>
-                        {formatGrams(selectedStat.totals[m.key])}
-                        <Text style={[styles.detailUnit, { color: c.faint }]}>g</Text>
-                      </Text>
-                    </View>
-                  ))}
-                </View>
-                <View style={[styles.detailDivider, { backgroundColor: c.border }]} />
-                <View style={styles.detailCalories}>
-                  <Text style={[styles.detailEyebrow, { color: c.muted }]}>TOTAL CALORIES</Text>
-                  <Text style={[styles.detailKcal, { color: c.text }]}>
-                    {formatNumber(selectedStat.kcal)}
-                    <Text style={[styles.detailUnit, { color: c.faint }]}> kcal</Text>
-                  </Text>
-                </View>
-              </>
-            ) : (
-              <Text style={[styles.empty, { color: c.faint }]}>Nothing logged</Text>
-            )}
-          </View>
+          <DayCard
+            day={selected}
+            entries={log[selected] ?? []}
+            editable={selected <= today}
+            onAdd={(values) => onAdd(selected, values)}
+            onDelete={(id) => onDelete(selected, id)}
+            onSetTotals={(values) => onSetTotals(selected, values)}
+          />
 
           <Text style={[styles.summary, { color: c.faint }]}>
             {month.logged === 0
@@ -228,6 +231,7 @@ export function CalendarSheet({ visible, onClose, log, today }: Props) {
                 ' kcal average'}
           </Text>
         </ScrollView>
+        </KeyboardAvoidingView>
       </View>
     </Modal>
   );
@@ -266,6 +270,7 @@ function NavButton({
 
 const styles = StyleSheet.create({
   sheet: { flex: 1 },
+  flex: { flex: 1 },
   sheetHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -310,28 +315,5 @@ const styles = StyleSheet.create({
   },
   cellDay: { fontSize: 14, fontWeight: '600', fontVariant: ['tabular-nums'] },
   cellKcal: { fontSize: 9, fontWeight: '600', marginTop: 1, fontVariant: ['tabular-nums'] },
-  detail: {
-    marginTop: 18,
-    borderRadius: 20,
-    borderWidth: StyleSheet.hairlineWidth * 2,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-  },
-  detailDate: { fontSize: 15, fontWeight: '700' },
-  detailRow: { flexDirection: 'row', marginTop: 12, marginBottom: 12 },
-  detailCol: { flex: 1, alignItems: 'center' },
-  detailLetter: { fontSize: 11, fontWeight: '800', letterSpacing: 1, marginBottom: 2 },
-  detailValue: { fontSize: 20, fontWeight: '700', fontVariant: ['tabular-nums'] },
-  detailUnit: { fontSize: 12, fontWeight: '600' },
-  detailDivider: { height: StyleSheet.hairlineWidth },
-  detailCalories: {
-    marginTop: 12,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'baseline',
-  },
-  detailEyebrow: { fontSize: 10, fontWeight: '700', letterSpacing: 1 },
-  detailKcal: { fontSize: 22, fontWeight: '800', fontVariant: ['tabular-nums'] },
-  empty: { marginTop: 10, fontSize: 14, fontWeight: '500' },
   summary: { marginTop: 16, textAlign: 'center', fontSize: 12, fontWeight: '600' },
 });

@@ -1,11 +1,22 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState, type AppStateStatus } from 'react-native';
 
-import { msUntilNextMidnight, todayKey, type DayKey } from './date';
-import { loadLog, mergeLogs, saveLog, type Entry, type Log } from './storage';
+import { fromDayKey, msUntilNextMidnight, todayKey, type DayKey } from './date';
+import { loadLog, mergeLogs, saveLog, type Entry, type Log, type Totals } from './storage';
 
 let counter = 0;
 const newId = () => `${Date.now().toString(36)}-${(counter++).toString(36)}`;
+
+/**
+ * Timestamp for an entry being written against `day`. Today gets the real
+ * clock; a day being filled in after the fact gets local noon, which sorts
+ * inside its own day and reads as "no particular time" rather than pretending
+ * to know when the food was eaten.
+ */
+function stampFor(day: DayKey): number {
+  if (day === todayKey()) return Date.now();
+  return fromDayKey(day).getTime() + 12 * 60 * 60 * 1000;
+}
 
 export function useLog() {
   const [log, setLog] = useState<Log>({});
@@ -86,6 +97,34 @@ export function useLog() {
     return { day, entry };
   }, []);
 
+  /** Add to any day — how the calendar backfills a day that was missed. */
+  const addOn = useCallback((day: DayKey, values: Totals) => {
+    const entry: Entry = { id: newId(), at: stampFor(day), ...values };
+    setLog((prev) => ({ ...prev, [day]: [...(prev[day] ?? []), entry] }));
+    return entry;
+  }, []);
+
+  /**
+   * Overwrite a day with a hand-typed total. The day's rows are what the total
+   * is derived from, so setting the total by hand necessarily collapses them
+   * into one entry — the caller is the one that warns about that. The first
+   * entry's id and timestamp are kept so the day doesn't jump around.
+   */
+  const setDayTotals = useCallback((day: DayKey, values: Totals) => {
+    setLog((prev) => {
+      const next = { ...prev };
+      if (values.c + values.p + values.f <= 0) {
+        delete next[day];
+        return next;
+      }
+      const first = prev[day]?.[0];
+      next[day] = [
+        { id: first?.id ?? newId(), at: first?.at ?? stampFor(day), ...values },
+      ];
+      return next;
+    });
+  }, []);
+
   const remove = useCallback((day: DayKey, id: string) => {
     setLog((prev) => {
       const next = (prev[day] ?? []).filter((e) => e.id !== id);
@@ -110,5 +149,5 @@ export function useLog() {
     [],
   );
 
-  return { log, today, hydrated, add, remove, update };
+  return { log, today, hydrated, add, addOn, setDayTotals, remove, update };
 }
