@@ -75,6 +75,7 @@ export function CalendarSheet({
     const stats = new Map<DayKey, DayStat>();
     let max = 0;
     let sum = 0;
+    let finished = 0;
     for (const key of cells) {
       if (!key) continue;
       const totals = sumDay(log[key]);
@@ -82,10 +83,21 @@ export function CalendarSheet({
       if (kcal <= 0) continue;
       stats.set(key, { totals, kcal });
       if (kcal > max) max = kcal;
+      // Today is still being logged. The moment breakfast goes in it would
+      // count as a whole day at breakfast's calories and drag the average
+      // down until midnight, so only finished days feed it.
+      if (key === today) continue;
       sum += kcal;
+      finished++;
     }
-    return { stats, max, logged: stats.size, average: stats.size ? sum / stats.size : 0 };
-  }, [cells, log]);
+    return {
+      stats,
+      max,
+      logged: stats.size,
+      finished,
+      average: finished ? sum / finished : 0,
+    };
+  }, [cells, log, today]);
 
   const atCurrentMonth = useMemo(() => {
     const d = fromDayKey(today);
@@ -226,9 +238,8 @@ export function CalendarSheet({
               ? 'No days logged this month'
               : month.logged +
                 (month.logged === 1 ? ' day logged' : ' days logged') +
-                '  ·  ' +
-                formatNumber(month.average) +
-                ' kcal average'}
+                // With only today logged there is no finished day to average.
+                (month.finished ? '  ·  ' + formatNumber(month.average) + ' kcal average' : '')}
           </Text>
         </ScrollView>
         </KeyboardAvoidingView>
