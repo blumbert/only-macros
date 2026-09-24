@@ -16,6 +16,7 @@ import { addDays, fromDayKey, shortDate, type DayKey } from '../date';
 import {
   dayTargets,
   loggedEnergyAvailability,
+  runningKcal,
   type DayTargets,
   type Guard,
   type Profile,
@@ -243,7 +244,7 @@ function DayTargetsCard({
   const header = (
     <View style={styles.dayNav}>
       <Pressable
-        onPress={() => setOffset((o) => o - 1)}
+        onPress={() => setOffset((o) => Math.max(o - 1, 0))}
         disabled={offset === 0}
         hitSlop={12}
         accessibilityRole="button"
@@ -253,7 +254,7 @@ function DayTargetsCard({
       </Pressable>
       <Text style={[styles.eyebrow, { color: c.muted }]}>{dayHeading(day, offset)}</Text>
       <Pressable
-        onPress={() => setOffset((o) => o + 1)}
+        onPress={() => setOffset((o) => Math.min(o + 1, MAX_DAYS_AHEAD))}
         disabled={offset === MAX_DAYS_AHEAD}
         hitSlop={12}
         accessibilityRole="button"
@@ -287,7 +288,19 @@ function DayTargetsCard({
   const logged = loggedEnergyAvailability(profile, log, weeks, today);
   const t = dayTargets(profile, plan, logged?.ea ?? null);
   const unit = units === 'imperial' ? 'mi' : 'km';
-  const distance = Math.round((units === 'imperial' ? plan.km / KM_PER_MI : plan.km) * 10) / 10;
+  const toUnit = (km: number) => Math.round((units === 'imperial' ? km / KM_PER_MI : km) * 10) / 10;
+
+  // Only the long run's distance was actually entered. Easy and workout days
+  // get an even share of the rest of the week, which is nobody's real day, so
+  // the card doesn't present it as one — it says what the share is and how to
+  // adjust from it, at the same per-distance cost the model itself uses.
+  const perUnitKcal = Math.round(
+    runningKcal(profile.weightKg, units === 'imperial' ? KM_PER_MI : 1) / 5,
+  ) * 5;
+  const adjust =
+    plan.type === 'easy' || plan.type === 'workout'
+      ? `Based on your weekly mileage spread evenly — about ${toUnit(plan.km)} ${unit} on each easy and workout day. Running more than that? Add about ${perUnitKcal} kcal per extra ${unit}, mostly as carbs (about ${Math.round(perUnitKcal / 4)} g). Running less, take the same off.`
+      : null;
 
   const grams = { c: t.carbsG, p: t.proteinG, f: t.fatG };
   const range = RULES.carbs[plan.type];
@@ -322,7 +335,7 @@ function DayTargetsCard({
       {header}
       <Text style={[styles.dayLabel, { color: c.faint }]}>
         {DAY_LABEL[plan.type]}
-        {plan.km > 0 ? ` · ${distance} ${unit}` : ''}
+        {plan.type === 'long' ? ` · ${toUnit(plan.km)} ${unit}` : ''}
       </Text>
       {borrowed ? (
         <Text style={[styles.why, { color: c.faint }]}>
@@ -367,6 +380,13 @@ function DayTargetsCard({
           {line}
         </Text>
       ))}
+
+      {adjust ? (
+        <View style={[styles.adjust, { backgroundColor: c.surfaceAlt }]}>
+          <Ionicons name="swap-vertical-outline" size={15} color={c.muted} />
+          <Text style={[styles.adjustText, { color: c.muted }]}>{adjust}</Text>
+        </View>
+      ) : null}
 
       {warnings.length ? (
         <View style={styles.warnings}>
@@ -530,6 +550,8 @@ const styles = StyleSheet.create({
   },
   noticeTitle: { fontSize: 13, fontWeight: '700' },
   noticeText: { fontSize: 12, fontWeight: '500', lineHeight: 17 },
+  adjust: { flexDirection: 'row', gap: 8, marginTop: 12, padding: 10, borderRadius: 12 },
+  adjustText: { flex: 1, fontSize: 12, fontWeight: '500', lineHeight: 17 },
   warnings: { marginTop: 10, gap: 8 },
   warningRow: { flexDirection: 'row', gap: 6, alignItems: 'flex-start' },
   warningText: { flex: 1, fontSize: 12, fontWeight: '500', lineHeight: 17 },
