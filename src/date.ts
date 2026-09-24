@@ -63,6 +63,12 @@ export function longDate(key: DayKey): string {
   return `${WEEKDAYS_LONG[d.getDay()]}, ${MONTHS_LONG[d.getMonth()]} ${d.getDate()}`;
 }
 
+/** "Sep 13". */
+export function shortDate(key: DayKey): string {
+  const d = fromDayKey(key);
+  return `${MONTHS_SHORT[d.getMonth()]} ${d.getDate()}`;
+}
+
 export function monthLabel(year: number, month: number): string {
   return `${MONTHS_LONG[month]} ${year}`;
 }

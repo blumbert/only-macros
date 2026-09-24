@@ -24,6 +24,7 @@ import {
 import { CalendarSheet } from './src/components/CalendarSheet';
 import { MacroField } from './src/components/MacroField';
 import { RecentEntries } from './src/components/RecentEntries';
+import { RunnerSheet } from './src/components/RunnerSheet';
 import { TotalsPanel } from './src/components/TotalsPanel';
 import { describeDay, longDate, type DayKey } from './src/date';
 import { parseMacroInput, sanitizeMacroInput } from './src/macroInput';
@@ -68,6 +69,7 @@ function Screen() {
 
   const [draft, setDraft] = useState<Draft>(EMPTY_DRAFT);
   const [calendarOpen, setCalendarOpen] = useState(false);
+  const [runnerOpen, setRunnerOpen] = useState(false);
   const [lastAdd, setLastAdd] = useState<
     { day: DayKey; id: string; c: number; p: number; f: number } | null
   >(null);
@@ -213,6 +215,24 @@ function Screen() {
         </Animated.View>
       ) : null}
 
+      {/* Runner fueling sits bottom-left, mirroring the calendar, so the main
+          screen stays the macro enterer and nothing else. */}
+      <Pressable
+        onPress={() => {
+          Keyboard.dismiss();
+          setRunnerOpen(true);
+        }}
+        accessibilityRole="button"
+        accessibilityLabel="Open runner fueling"
+        style={({ pressed }) => [
+          styles.fab,
+          styles.fabLeft,
+          { backgroundColor: c.accent, bottom: insets.bottom + 20, opacity: pressed ? 0.75 : 1 },
+        ]}
+      >
+        <Ionicons name="footsteps-outline" size={24} color={c.onAccent} />
+      </Pressable>
+
       <Pressable
         onPress={() => {
           Keyboard.dismiss();
@@ -236,6 +256,13 @@ function Screen() {
         onAdd={addOn}
         onDelete={remove}
         onSetTotals={setDayTotals}
+      />
+
+      <RunnerSheet
+        visible={runnerOpen}
+        onClose={() => setRunnerOpen(false)}
+        log={log}
+        today={today}
       />
     </SafeAreaView>
   );
@@ -294,4 +321,5 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 6 },
     elevation: 6,
   },
+  fabLeft: { right: undefined, left: 20 },
 });
