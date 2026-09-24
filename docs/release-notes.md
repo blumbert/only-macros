@@ -7,6 +7,33 @@ what someone would notice.
 
 ---
 
+## How to ship
+
+**JS-only fix or tweak** (from 1.0.3 on) — goes straight to phones on the
+same app version, no build, no review:
+
+```sh
+npx eas-cli@latest update --channel production --message "what changed"
+```
+
+**New App Store release** — anything with a new native module, a new feature
+App Review should see, or when the version should change:
+
+1. Bump `version` in app.json. Over-the-air updates only reach phones on the
+   version they were built for, so a new version starts a new update line.
+2. `npx eas-cli@latest build --platform ios --profile production --auto-submit --non-interactive`
+3. In App Store Connect: new version, select the build, paste What's New
+   from below, update review notes if the app changed, submit for review.
+
+---
+
+## 1.0.3
+
+The calendar's monthly average now leaves out today until the day is over, so
+it's no longer pulled down by a day you're still logging.
+
+---
+
 ## 1.0.2
 
 Edit any day from the calendar.
