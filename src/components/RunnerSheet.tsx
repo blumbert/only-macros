@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Modal,
@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import type { DayKey } from '../date';
+import { addDays, fromDayKey, shortDate, type DayKey } from '../date';
 import {
   dayTargets,
   loggedEnergyAvailability,
@@ -22,7 +22,7 @@ import {
 } from '../fueling/model';
 import { useRunner, type Units } from '../fueling/profile';
 import { RULES, SOURCES, type DayType } from '../fueling/rules';
-import { checkWeek, KM_PER_MI, planFor, weekFor } from '../fueling/training';
+import { checkWeek, KM_PER_MI, planFor, weekFor, weekKey } from '../fueling/training';
 import type { Log } from '../storage';
 import { formatNumber, MACROS, useTheme } from '../theme';
 import { RunnerProfileForm } from './RunnerProfileForm';
@@ -41,6 +41,20 @@ const DAY_LABEL: Record<DayType, string> = {
   workout: 'Workout day',
   long: 'Long run day',
 };
+
+/**
+ * How far ahead the targets card goes. A week covers a meal-prep cycle;
+ * further out, the training plan behind the numbers is mostly a guess.
+ */
+const MAX_DAYS_AHEAD = 6;
+
+const WEEKDAYS = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
+
+function dayHeading(day: DayKey, offset: number): string {
+  if (offset === 0) return 'TODAY';
+  if (offset === 1) return 'TOMORROW';
+  return `${WEEKDAYS[fromDayKey(day).getDay()]} · ${shortDate(day).toUpperCase()}`;
+}
 
 const DAY_NOUN: Record<DayType, string> = {
   rest: 'a rest day',
@@ -74,9 +88,9 @@ function warningCopy(guard: Guard, t: DayTargets, loggedEa: number | null): stri
     case 'loggedReducedEa':
       return `Your recent logging puts energy availability at ${loggedEa}, below the ${RULES.ea.adequate} considered adequate.`;
     case 'reducedEa':
-      return `Today’s target puts energy availability at ${t.ea}, below the ${RULES.ea.adequate} considered adequate — fine for a slow cut, not something to hold for months.`;
+      return `This target puts energy availability at ${t.ea}, below the ${RULES.ea.adequate} considered adequate — fine for a slow cut, not something to hold for months.`;
     case 'fatBelowFloor':
-      return 'Fat is below 20% of today’s energy.';
+      return 'Fat is below 20% of the day’s energy.';
     default:
       return null;
   }
@@ -147,7 +161,7 @@ export function RunnerSheet({ visible, onClose, log, today }: Props) {
                 </>
               ) : (
                 <>
-                  <Today profile={profile} units={runner.units} log={log} today={today} weeks={runner.weeks} />
+                  <DayTargetsCard profile={profile} units={runner.units} log={log} today={today} weeks={runner.weeks} />
                   <TrainingWeekEditor
                     weeks={runner.weeks}
                     today={today}
@@ -200,7 +214,7 @@ export function RunnerSheet({ visible, onClose, log, today }: Props) {
   );
 }
 
-function Today({
+function DayTargetsCard({
   profile,
   units,
   log,
@@ -214,23 +228,62 @@ function Today({
   weeks: ReturnType<typeof useRunner>['weeks'];
 }) {
   const { c } = useTheme();
-  const plan = planFor(weeks, today);
-  const found = weekFor(weeks, today);
+  // Days ahead of today, so meal prep can plan for the days it covers. Resets
+  // to today whenever the day rolls over.
+  const [offset, setOffset] = useState(0);
+  useEffect(() => setOffset(0), [today]);
+
+  const day = addDays(today, offset);
+  const plan = planFor(weeks, day);
+  const found = weekFor(weeks, day);
   const problem = found ? checkWeek(found.week) : null;
+  // A later week that hasn't been entered borrows the most recent one.
+  const borrowed = found?.carried && weekKey(day) > weekKey(today) ? found.key : null;
+
+  const header = (
+    <View style={styles.dayNav}>
+      <Pressable
+        onPress={() => setOffset((o) => o - 1)}
+        disabled={offset === 0}
+        hitSlop={12}
+        accessibilityRole="button"
+        accessibilityLabel="Previous day"
+      >
+        <Ionicons name="chevron-back" size={18} color={offset === 0 ? c.faint : c.text} />
+      </Pressable>
+      <Text style={[styles.eyebrow, { color: c.muted }]}>{dayHeading(day, offset)}</Text>
+      <Pressable
+        onPress={() => setOffset((o) => o + 1)}
+        disabled={offset === MAX_DAYS_AHEAD}
+        hitSlop={12}
+        accessibilityRole="button"
+        accessibilityLabel="Next day"
+      >
+        <Ionicons
+          name="chevron-forward"
+          size={18}
+          color={offset === MAX_DAYS_AHEAD ? c.faint : c.text}
+        />
+      </Pressable>
+    </View>
+  );
 
   if (!plan || problem) {
     return (
       <View style={[styles.card, { backgroundColor: c.surface, borderColor: c.border }]}>
-        <Text style={[styles.eyebrow, { color: c.muted }]}>TODAY</Text>
+        {header}
         <Text style={[styles.empty, { color: c.faint }]}>
           {plan
-            ? 'Finish this week’s entry below to see today’s targets.'
-            : 'Enter this week’s training below to see today’s targets.'}
+            ? 'Finish that week’s training entry below to see these targets.'
+            : 'Enter this week’s training below to see targets.'}
         </Text>
       </View>
     );
   }
 
+  // Energy availability from the log is where the runner is now, so it
+  // guards every day shown — tomorrow's targets can't be based on meals that
+  // haven't been eaten.
   const logged = loggedEnergyAvailability(profile, log, weeks, today);
   const t = dayTargets(profile, plan, logged?.ea ?? null);
   const unit = units === 'imperial' ? 'mi' : 'km';
@@ -253,7 +306,7 @@ function Today({
       `${RULES.deficit.kcal} kcal under your maintenance of ${formatNumber(t.maintenanceKcal)}. Deficits only go on rest and easy days, so the loss is slow on purpose.`,
     );
   } else if (t.goal === 'lose') {
-    why.push('No deficit today — workout and long-run days are fuelled in full.');
+    why.push('No deficit — workout and long-run days are fuelled in full.');
   } else if (t.goal === 'recomp') {
     why.push(
       'Recomp keeps energy at maintenance with more protein. Strength training is what drives it, and for trained runners the change is slow.',
@@ -266,13 +319,17 @@ function Today({
 
   return (
     <View style={[styles.card, { backgroundColor: c.surface, borderColor: c.border }]}>
-      <View style={styles.cardHeader}>
-        <Text style={[styles.eyebrow, { color: c.muted }]}>TODAY</Text>
-        <Text style={[styles.dayLabel, { color: c.faint }]}>
-          {DAY_LABEL[plan.type]}
-          {plan.km > 0 ? ` · ${distance} ${unit}` : ''}
+      {header}
+      <Text style={[styles.dayLabel, { color: c.faint }]}>
+        {DAY_LABEL[plan.type]}
+        {plan.km > 0 ? ` · ${distance} ${unit}` : ''}
+      </Text>
+      {borrowed ? (
+        <Text style={[styles.why, { color: c.faint }]}>
+          That week isn&apos;t entered yet, so this uses the plan from the week of{' '}
+          {shortDate(borrowed)}.
         </Text>
-      </View>
+      ) : null}
 
       <Text style={[styles.kcal, { color: c.text }]}>
         {formatNumber(t.kcal)}
@@ -452,9 +509,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
   },
-  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  dayNav: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   eyebrow: { fontSize: 10, fontWeight: '700', letterSpacing: 1 },
-  dayLabel: { fontSize: 12, fontWeight: '600' },
+  dayLabel: { fontSize: 12, fontWeight: '600', textAlign: 'center', marginTop: 4 },
   empty: { marginTop: 10, fontSize: 14, fontWeight: '500', lineHeight: 19 },
   kcal: { fontSize: 30, fontWeight: '800', marginTop: 8, fontVariant: ['tabular-nums'] },
   unit: { fontSize: 13, fontWeight: '600' },

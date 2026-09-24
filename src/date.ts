@@ -63,6 +63,13 @@ export function longDate(key: DayKey): string {
   return `${WEEKDAYS_LONG[d.getDay()]}, ${MONTHS_LONG[d.getMonth()]} ${d.getDate()}`;
 }
 
+/** The day `days` after `key` (negative for before), in local time. */
+export function addDays(key: DayKey, days: number): DayKey {
+  const d = fromDayKey(key);
+  d.setDate(d.getDate() + days);
+  return toDayKey(d);
+}
+
 /** "Sep 13". */
 export function shortDate(key: DayKey): string {
   const d = fromDayKey(key);

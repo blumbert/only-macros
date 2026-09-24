@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
-import { fromDayKey, shortDate, toDayKey, WEEKDAY_INITIALS, type DayKey } from '../date';
+import { addDays, shortDate, WEEKDAY_INITIALS, type DayKey } from '../date';
 import type { Units } from '../fueling/profile';
 import type { DayType } from '../fueling/rules';
 import {
@@ -25,12 +25,6 @@ type Props = {
 };
 
 const WEEKDAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-
-const shiftWeek = (key: DayKey, weeks: number) => {
-  const d = fromDayKey(key);
-  d.setDate(d.getDate() + weeks * 7);
-  return toDayKey(d);
-};
 
 export function TrainingWeekEditor({ weeks, today, units, onChange }: Props) {
   const { c } = useTheme();
@@ -77,7 +71,7 @@ export function TrainingWeekEditor({ weeks, today, units, onChange }: Props) {
     <View style={[styles.card, { backgroundColor: c.surface, borderColor: c.border }]}>
       <View style={styles.nav}>
         <Pressable
-          onPress={() => setViewKey((k) => shiftWeek(k, -1))}
+          onPress={() => setViewKey((k) => addDays(k, -7))}
           hitSlop={12}
           accessibilityRole="button"
           accessibilityLabel="Previous week"
@@ -88,7 +82,7 @@ export function TrainingWeekEditor({ weeks, today, units, onChange }: Props) {
           {viewKey === thisWeek ? 'This week' : `Week of ${shortDate(viewKey)}`}
         </Text>
         <Pressable
-          onPress={() => setViewKey((k) => shiftWeek(k, 1))}
+          onPress={() => setViewKey((k) => addDays(k, 7))}
           disabled={viewKey >= thisWeek}
           hitSlop={12}
           accessibilityRole="button"
