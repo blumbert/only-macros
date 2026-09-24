@@ -9,28 +9,31 @@ what someone would notice.
 
 ## How to ship
 
-**JS-only fix or tweak** (from 1.0.3 on) — goes straight to phones on the
-same app version, no build, no review:
+Every change goes out as an App Store release. The app has no update
+mechanism of its own — it makes no network requests at all, which is what
+keeps App Privacy at "Data Not Collected". (Over-the-air updates were tried
+for 1.0.3 and taken back out for exactly that reason: `expo-updates` requires
+declaring Crash Data.)
 
-```sh
-npx eas-cli@latest update --channel production --message "what changed"
-```
-
-**New App Store release** — anything with a new native module, a new feature
-App Review should see, or when the version should change:
-
-1. Bump `version` in app.json. Over-the-air updates only reach phones on the
-   version they were built for, so a new version starts a new update line.
+1. Bump `version` in app.json. A version that's already live on the store is
+   rejected on upload (ITMS-90062).
 2. `npx eas-cli@latest build --platform ios --profile production --auto-submit --non-interactive`
-3. In App Store Connect: new version, select the build, paste What's New
-   from below, update review notes if the app changed, submit for review.
+   — builds, then uploads to App Store Connect. The build lands in TestFlight.
+3. In App Store Connect: new version, select the build, paste What's New from
+   below, update the review notes if the app changed, submit for review.
 
 ---
 
 ## 1.0.3
 
-The calendar's monthly average now leaves out today until the day is over, so
-it's no longer pulled down by a day you're still logging.
+New for runners: Runner fueling. Tap the button in the bottom-left for daily
+calorie and macro targets that follow your training — more carbs on workout and
+long-run days — built on published sports-nutrition research. It won't put you
+into a deficit when there are warning signs of under-fuelling, and like
+everything else in the app, what you enter stays on your phone.
+
+Also: the calendar's monthly average now leaves out today until the day is
+over, so it's no longer pulled down by a day you're still logging.
 
 ---
 

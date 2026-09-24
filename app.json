@@ -3,12 +3,6 @@
     "name": "Only Macros",
     "slug": "only-macros",
     "version": "1.0.3",
-    "runtimeVersion": {
-      "policy": "appVersion"
-    },
-    "updates": {
-      "url": "https://u.expo.dev/1532538c-8f85-4026-8fd2-a48c0b860749"
-    },
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "macros",

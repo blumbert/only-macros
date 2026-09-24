@@ -1,6 +1,6 @@
 # Privacy Policy — Only Macros
 
-_Last updated: 22 August 2026_
+_Last updated: 24 September 2026_
 
 ## Short version
 
@@ -10,14 +10,21 @@ no analytics, no advertising, and no network connection of any kind.
 ## What the app stores
 
 The macro entries you type — carbohydrates, protein and fat, and the date each
-entry was made — are saved in the app's own storage on your device. That is the
-only data the app records.
+entry was made — are saved in the app's own storage on your device.
+
+If you use the optional Runner fueling page, the profile and training you enter
+there are saved the same way: sex, age, weight, body fat if you give it, the
+kind of day job you have, your goal, your bone stress injury history, your
+menstrual cycle if you choose to answer, and your weekly mileage and training
+days. They are used only to calculate your targets, on your phone.
+
+That is the only data the app records.
 
 ## Where it goes
 
-Nowhere. The app contains no networking code. Your entries never leave your
-phone, are never sent to a server, and are not visible to the developer or to
-anyone else.
+Nowhere. The app contains no networking code. Your entries and your runner
+profile never leave your phone, are never sent to a server, and are not visible
+to the developer or to anyone else.
 
 Your data may be included in an iCloud or iTunes backup of your phone if you
 have device backups enabled. That backup is controlled entirely by Apple and by
