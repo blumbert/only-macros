@@ -1,7 +1,7 @@
 import { fromDayKey, toDayKey, type DayKey } from '../date';
 import { calories, sumDay, type Log } from '../storage';
 import { RULES, type DayType } from './rules';
-import { planFor, type Weeks } from './training';
+import { planFor, type DayKm, type Weeks } from './training';
 
 export type Sex = 'male' | 'female';
 export type Goal = 'maintain' | 'lose' | 'recomp';
@@ -169,7 +169,8 @@ export function dayTargets(
 
 /**
  * Energy availability from what was actually eaten over the last week, using
- * each day's own running from the training weeks. Today is left out because
+ * each day's own running from the training weeks (or the distance set for that
+ * day, when there is one). Today is left out because
  * it isn't finished, and days with nothing logged are skipped rather than read
  * as zero — the same rules the calendar's monthly average follows. Too few
  * logged days and there's nothing meaningful to say, so it returns null.
@@ -179,6 +180,7 @@ export function loggedEnergyAvailability(
   log: Log,
   weeks: Weeks,
   today: DayKey,
+  dayKm: DayKm = {},
 ): { ea: number; days: number } | null {
   const ffm = fatFreeMass(p);
   const start = fromDayKey(today);
@@ -189,7 +191,7 @@ export function loggedEnergyAvailability(
     d.setDate(d.getDate() - back);
     const key = toDayKey(d);
     const intake = calories(sumDay(log[key]));
-    const plan = planFor(weeks, key);
+    const plan = planFor(weeks, key, dayKm, today);
     if (intake <= 0 || !plan) continue;
     total += (intake - runningKcal(p.weightKg, plan.km)) / ffm;
     days++;

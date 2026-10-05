@@ -101,6 +101,45 @@ describe('dailyKm', () => {
     };
     expect(dailyKm(week).reduce((a, b) => a + b, 0)).toBeCloseTo(88);
   });
+
+  describe('with days set and days already past', () => {
+    // 50 km: long 20 Sunday, rest Monday and Friday, 7.5 on each other day.
+    const week: Week = {
+      km: 50,
+      longRunKm: 20,
+      days: ['long', 'rest', 'easy', 'workout', 'easy', 'rest', 'easy'],
+    };
+    const none = Array<number | undefined>(7).fill(undefined);
+    const withSet = (i: number, km: number) => none.map((v, j) => (j === i ? km : v));
+
+    it('is the plain plan when nothing is set and nothing has passed', () => {
+      expect(dailyKm(week, none, 0)).toEqual(dailyKm(week));
+    });
+
+    it('splits what a set day leaves over the other open days', () => {
+      // Tuesday set to 12 leaves 50 - 20 - 12 = 18 for Wed, Thu, Sat.
+      expect(dailyKm(week, withSet(2, 12), 0)).toEqual([20, 0, 12, 6, 6, 0, 6]);
+    });
+
+    it('assumes unset past days went to plan, and spreads the rest over the days left', () => {
+      // Thursday: Sun 20 + Tue 7.5 + Wed 7.5 are done, leaving 15 for Thu and Sat.
+      expect(dailyKm(week, none, 4)).toEqual([20, 0, 7.5, 7.5, 7.5, 0, 7.5]);
+      // Wednesday skipped: Thu and Sat pick up its 7.5.
+      expect(dailyKm(week, withSet(3, 0), 4)).toEqual([20, 0, 7.5, 0, 11.25, 0, 11.25]);
+    });
+
+    it('counts a run on a rest day against the week', () => {
+      expect(dailyKm(week, withSet(1, 6), 0)).toEqual([20, 6, 6, 6, 6, 0, 6]);
+    });
+
+    it('lets a set day replace the long run', () => {
+      expect(dailyKm(week, withSet(0, 26), 0)).toEqual([26, 0, 6, 6, 6, 0, 6]);
+    });
+
+    it('never goes below zero when the week is already run', () => {
+      expect(dailyKm(week, withSet(2, 40), 0)).toEqual([20, 0, 40, 0, 0, 0, 0]);
+    });
+  });
 });
 
 describe('checkWeek', () => {
@@ -153,6 +192,44 @@ describe('planFor', () => {
       days: ['long', 'rest', 'workout', 'easy', 'easy', 'rest', 'easy'],
     };
     // 2026-09-22 is a Tuesday — index 2.
-    expect(planFor({ '2026-09-20': week }, '2026-09-22')).toEqual({ type: 'workout', km: 10 });
+    expect(planFor({ '2026-09-20': week }, '2026-09-22')).toEqual({
+      type: 'workout',
+      km: 10,
+      set: false,
+    });
+  });
+
+  const week: Week = {
+    km: 50,
+    longRunKm: 20,
+    days: ['long', 'rest', 'easy', 'workout', 'easy', 'rest', 'easy'],
+  };
+  const weeks = { '2026-09-20': week };
+
+  it('returns a distance set for the day, and says so', () => {
+    expect(planFor(weeks, '2026-09-22', { '2026-09-22': 3 })).toEqual({
+      type: 'easy',
+      km: 3,
+      set: true,
+    });
+  });
+
+  it('defaults today to what is left of the week over the running days left', () => {
+    // Thursday 9/24, Wednesday skipped: 50 - 20 - 7.5 - 0 = 22.5 over Thu and Sat.
+    const plan = planFor(weeks, '2026-09-24', { '2026-09-23': 0 }, '2026-09-24');
+    expect(plan?.km).toBeCloseTo(11.25);
+  });
+
+  it('treats every day of a past week as done and a future week as open', () => {
+    const dayKm = { '2026-09-22': 0 };
+    // Seen from the next week, Wednesday's share isn't moved by Tuesday's skip.
+    expect(planFor(weeks, '2026-09-23', dayKm, '2026-09-28')?.km).toBeCloseTo(7.5);
+    // Seen from the week before, the whole week is still to come.
+    expect(planFor(weeks, '2026-09-23', dayKm, '2026-09-15')?.km).toBeCloseTo(10);
+  });
+
+  it('applies set days by date, not to the week the plan was carried from', () => {
+    // The 9/27 week borrows 9/20's plan; a day set in 9/20 doesn't follow it.
+    expect(planFor(weeks, '2026-09-29', { '2026-09-22': 0 })?.km).toBeCloseTo(7.5);
   });
 });

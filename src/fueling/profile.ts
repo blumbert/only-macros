@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { isDayKey, type DayKey } from '../date';
 import type { BoneHistory, Cycle, Goal, Profile, Sex } from './model';
 import type { DayType } from './rules';
-import type { Week, Weeks } from './training';
+import type { DayKm, Week, Weeks } from './training';
 
 /** How distances and weight are shown and typed. Storage is always km and kg. */
 export type Units = 'imperial' | 'metric';
@@ -13,11 +13,13 @@ export type RunnerState = {
   profile: Profile | null;
   units: Units;
   weeks: Weeks;
+  /** Distances set for single days, overriding the week's plan for that day. */
+  dayKm: DayKm;
 };
 
 const STORAGE_KEY = 'macrotracker.runner.v1';
 
-const EMPTY: RunnerState = { profile: null, units: 'imperial', weeks: {} };
+const EMPTY: RunnerState = { profile: null, units: 'imperial', weeks: {}, dayKm: {} };
 
 const oneOf = <T extends string>(value: unknown, allowed: readonly T[], fallback: T): T =>
   allowed.includes(value as T) ? (value as T) : fallback;
@@ -71,10 +73,20 @@ function sanitize(raw: unknown): RunnerState {
       if (isDayKey(key) && week) weeks[key] = week;
     }
   }
+  // Zero is a real answer here — a day set to 0 is a skipped run.
+  const dayKm: DayKm = {};
+  if (r.dayKm && typeof r.dayKm === 'object') {
+    for (const [key, value] of Object.entries(r.dayKm as Record<string, unknown>)) {
+      if (isDayKey(key) && typeof value === 'number' && Number.isFinite(value) && value >= 0) {
+        dayKm[key] = value;
+      }
+    }
+  }
   return {
     profile: sanitizeProfile(r.profile),
     units: oneOf<Units>(r.units, ['imperial', 'metric'], 'imperial'),
     weeks,
+    dayKm,
   };
 }
 
@@ -112,6 +124,7 @@ export function useRunner() {
         profile: current.profile ?? stored.profile,
         units: current.profile ? current.units : stored.units,
         weeks: { ...stored.weeks, ...current.weeks },
+        dayKm: { ...stored.dayKm, ...current.dayKm },
       }));
       setHydrated(true);
     });
@@ -132,5 +145,15 @@ export function useRunner() {
     setState((prev) => ({ ...prev, weeks: { ...prev.weeks, [key]: week } }));
   }, []);
 
-  return { ...state, hydrated, setProfile, setWeek };
+  /** `null` drops the day back to the week's plan. */
+  const setDayKm = useCallback((day: DayKey, km: number | null) => {
+    setState((prev) => {
+      const dayKm = { ...prev.dayKm };
+      if (km === null) delete dayKm[day];
+      else dayKm[day] = km;
+      return { ...prev, dayKm };
+    });
+  }, []);
+
+  return { ...state, hydrated, setProfile, setWeek, setDayKm };
 }

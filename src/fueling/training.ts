@@ -1,4 +1,4 @@
-import { fromDayKey, toDayKey, type DayKey } from '../date';
+import { addDays, fromDayKey, toDayKey, type DayKey } from '../date';
 import type { DayType } from './rules';
 
 /**
@@ -57,18 +57,43 @@ export function checkWeek(week: Week): WeekProblem | null {
   return null;
 }
 
+/** Distances the runner set for single days, in km, keyed by date. */
+export type DayKm = Record<DayKey, number>;
+
 /**
  * Kilometres for each day of the week. The long run is whatever was entered —
  * its share of the week ranges from a third for a recreational runner to under
  * a fifth for an elite, so it can't be guessed — and the rest of the mileage is
  * split evenly across the remaining running days.
+ *
+ * `set` holds distances the runner gave for single days (by weekday index), and
+ * `firstOpen` is the first day that hasn't happened yet. A day the runner set
+ * is that distance, wherever it falls. Days before `firstOpen` that weren't set
+ * are assumed to have gone to plan. From `firstOpen` on, whatever is left of
+ * the week is split across the easy and workout days still to come, so running
+ * long early in the week shortens the days after it and missing a day lengthens
+ * them.
  */
-export function dailyKm(week: Week): number[] {
+export function dailyKm(week: Week, set: (number | undefined)[] = [], firstOpen = 0): number[] {
   const hasLong = week.days.includes('long');
   const longKm = hasLong ? Math.min(Math.max(week.longRunKm, 0), week.km) : 0;
   const others = week.days.filter((t) => t === 'easy' || t === 'workout').length;
   const each = others ? Math.max(week.km - longKm, 0) / others : 0;
-  return week.days.map((t) => (t === 'rest' ? 0 : t === 'long' ? longKm : each));
+  const planned = week.days.map((t) => (t === 'rest' ? 0 : t === 'long' ? longKm : each));
+
+  // Each day is either pinned (set, already past, or a rest or long run day)
+  // or open, and open days share whatever the pinned ones leave.
+  const pinned = week.days.map((t, i) =>
+    set[i] !== undefined
+      ? set[i]
+      : i < firstOpen || (t !== 'easy' && t !== 'workout')
+        ? planned[i]
+        : null,
+  );
+  const open = pinned.filter((km) => km === null).length;
+  const used = pinned.reduce<number>((sum, km) => sum + (km ?? 0), 0);
+  const share = open ? Math.max(week.km - used, 0) / open : 0;
+  return pinned.map((km) => km ?? share);
 }
 
 /**
@@ -87,10 +112,38 @@ export function weekFor(weeks: Weeks, day: DayKey): { week: Week; key: DayKey; c
   return last ? { week: weeks[last], key: last, carried: true } : null;
 }
 
-/** Day type and distance for one calendar day, from whichever week covers it. */
-export function planFor(weeks: Weeks, day: DayKey): { type: DayType; km: number } | null {
+/**
+ * Day type and distance for one calendar day, from whichever week covers it.
+ * `dayKm` are distances set for single days; `today` decides which days of the
+ * week are still to come, and so share what's left of it. Without `today`,
+ * every day counts as still to come.
+ *
+ * `set` says the distance is one the runner set for this day, rather than the
+ * plan's.
+ */
+export function planFor(
+  weeks: Weeks,
+  day: DayKey,
+  dayKm: DayKm = {},
+  today?: DayKey,
+): { type: DayType; km: number; set: boolean } | null {
   const found = weekFor(weeks, day);
   if (!found) return null;
+  // Set distances belong to the dates they were set on, not to the week the
+  // plan was carried from.
+  const start = weekKey(day);
+  const set = Array.from({ length: 7 }, (_, i) => dayKm[addDays(start, i)]);
+  const firstOpen = !today
+    ? 0
+    : start < weekKey(today)
+      ? 7
+      : start > weekKey(today)
+        ? 0
+        : fromDayKey(today).getDay();
   const index = fromDayKey(day).getDay();
-  return { type: found.week.days[index], km: dailyKm(found.week)[index] };
+  return {
+    type: found.week.days[index],
+    km: dailyKm(found.week, set, firstOpen)[index],
+    set: set[index] !== undefined,
+  };
 }

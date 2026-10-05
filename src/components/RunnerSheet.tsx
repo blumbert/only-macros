@@ -16,16 +16,23 @@ import { addDays, fromDayKey, shortDate, type DayKey } from '../date';
 import {
   dayTargets,
   loggedEnergyAvailability,
-  runningKcal,
   type DayTargets,
   type Guard,
   type Profile,
 } from '../fueling/model';
 import { useRunner, type Units } from '../fueling/profile';
 import { RULES, SOURCES, type DayType } from '../fueling/rules';
-import { checkWeek, KM_PER_MI, planFor, weekFor, weekKey } from '../fueling/training';
+import {
+  checkWeek,
+  KM_PER_MI,
+  planFor,
+  weekFor,
+  weekKey,
+  type DayKm,
+} from '../fueling/training';
 import type { Log } from '../storage';
 import { formatNumber, MACROS, useTheme } from '../theme';
+import { MileageWheel } from './MileageWheel';
 import { RunnerProfileForm } from './RunnerProfileForm';
 import { TrainingWeekEditor } from './TrainingWeekEditor';
 
@@ -162,14 +169,28 @@ export function RunnerSheet({ visible, onClose, log, today }: Props) {
                 </>
               ) : (
                 <>
-                  <DayTargetsCard profile={profile} units={runner.units} log={log} today={today} weeks={runner.weeks} />
+                  <DayTargetsCard
+                    profile={profile}
+                    units={runner.units}
+                    log={log}
+                    today={today}
+                    weeks={runner.weeks}
+                    dayKm={runner.dayKm}
+                    onSetKm={runner.setDayKm}
+                  />
                   <TrainingWeekEditor
                     weeks={runner.weeks}
                     today={today}
                     units={runner.units}
                     onChange={runner.setWeek}
                   />
-                  <LastWeek profile={profile} log={log} today={today} weeks={runner.weeks} />
+                  <LastWeek
+                    profile={profile}
+                    log={log}
+                    today={today}
+                    weeks={runner.weeks}
+                    dayKm={runner.dayKm}
+                  />
                   <ProfileSummary
                     profile={profile}
                     units={runner.units}
@@ -221,21 +242,28 @@ function DayTargetsCard({
   log,
   today,
   weeks,
+  dayKm,
+  onSetKm,
 }: {
   profile: Profile;
   units: Units;
   log: Log;
   today: DayKey;
   weeks: ReturnType<typeof useRunner>['weeks'];
+  dayKm: DayKm;
+  onSetKm: (day: DayKey, km: number | null) => void;
 }) {
   const { c } = useTheme();
   // Days ahead of today, so meal prep can plan for the days it covers. Resets
   // to today whenever the day rolls over.
   const [offset, setOffset] = useState(0);
   useEffect(() => setOffset(0), [today]);
+  // The distance under the wheel while it's turning, in the runner's unit.
+  const [preview, setPreview] = useState<number | null>(null);
 
   const day = addDays(today, offset);
-  const plan = planFor(weeks, day);
+  useEffect(() => setPreview(null), [day]);
+  const plan = planFor(weeks, day, dayKm, today);
   const found = weekFor(weeks, day);
   const problem = found ? checkWeek(found.week) : null;
   // A later week that hasn't been entered borrows the most recent one.
@@ -285,22 +313,21 @@ function DayTargetsCard({
   // Energy availability from the log is where the runner is now, so it
   // guards every day shown — tomorrow's targets can't be based on meals that
   // haven't been eaten.
-  const logged = loggedEnergyAvailability(profile, log, weeks, today);
-  const t = dayTargets(profile, plan, logged?.ea ?? null);
-  const unit = units === 'imperial' ? 'mi' : 'km';
-  const toUnit = (km: number) => Math.round((units === 'imperial' ? km / KM_PER_MI : km) * 10) / 10;
+  const logged = loggedEnergyAvailability(profile, log, weeks, today, dayKm);
+  const imperial = units === 'imperial';
+  const unit = imperial ? 'mi' : 'km';
+  const toUnit = (km: number) => Math.round((imperial ? km / KM_PER_MI : km) * 10) / 10;
+  const toKm = (v: number) => (imperial ? v * KM_PER_MI : v);
+  const km = preview !== null ? toKm(preview) : plan.km;
+  const t = dayTargets(profile, { type: plan.type, km }, logged?.ea ?? null);
 
-  // Only the long run's distance was actually entered. Easy and workout days
-  // get an even share of the rest of the week, which is nobody's real day, so
-  // the card doesn't present it as one — it says what the share is and how to
-  // adjust from it, at the same per-distance cost the model itself uses.
-  const perUnitKcal = Math.round(
-    runningKcal(profile.weightKg, units === 'imperial' ? KM_PER_MI : 1) / 5,
-  ) * 5;
-  const adjust =
-    plan.type === 'easy' || plan.type === 'workout'
-      ? `Based on your weekly mileage spread evenly — about ${toUnit(plan.km)} ${unit} on each easy and workout day. Running more than that? Add about ${perUnitKcal} kcal per extra ${unit}, mostly as carbs (about ${Math.round(perUnitKcal / 4)} g). Running less, take the same off.`
-      : null;
+  const distanceNote = plan.set
+    ? 'Distance you set for this day. The rest of the week’s running days split what’s left.'
+    : plan.type === 'long'
+      ? 'Your long run, from this week’s plan.'
+      : plan.type === 'rest'
+        ? 'Rest day. Scroll if you run anyway.'
+        : 'What’s left of this week’s mileage, split over the running days left. Scroll to change it.';
 
   const grams = { c: t.carbsG, p: t.proteinG, f: t.fatG };
   const range = RULES.carbs[plan.type];
@@ -333,10 +360,7 @@ function DayTargetsCard({
   return (
     <View style={[styles.card, { backgroundColor: c.surface, borderColor: c.border }]}>
       {header}
-      <Text style={[styles.dayLabel, { color: c.faint }]}>
-        {DAY_LABEL[plan.type]}
-        {plan.type === 'long' ? ` · ${toUnit(plan.km)} ${unit}` : ''}
-      </Text>
+      <Text style={[styles.dayLabel, { color: c.faint }]}>{DAY_LABEL[plan.type]}</Text>
       {borrowed ? (
         <Text style={[styles.why, { color: c.faint }]}>
           That week isn&apos;t entered yet, so this uses the plan from the week of{' '}
@@ -344,10 +368,33 @@ function DayTargetsCard({
         </Text>
       ) : null}
 
-      <Text style={[styles.kcal, { color: c.text }]}>
-        {formatNumber(t.kcal)}
-        <Text style={[styles.unit, { color: c.faint }]}> kcal</Text>
-      </Text>
+      <View style={styles.kcalRow}>
+        <Text style={[styles.kcal, styles.flex, { color: c.text }]}>
+          {formatNumber(t.kcal)}
+          <Text style={[styles.unit, { color: c.faint }]}> kcal</Text>
+        </Text>
+        <MileageWheel
+          key={day}
+          value={toUnit(plan.km)}
+          unit={unit}
+          onPreview={setPreview}
+          onCommit={(v) => onSetKm(day, toKm(v))}
+        />
+        <Text style={[styles.unit, { color: c.faint }]}>{unit}</Text>
+      </View>
+      <View style={styles.distanceNote}>
+        <Text style={[styles.distanceNoteText, { color: c.faint }]}>{distanceNote}</Text>
+        {plan.set ? (
+          <Pressable
+            onPress={() => onSetKm(day, null)}
+            hitSlop={10}
+            accessibilityRole="button"
+            accessibilityLabel="Go back to the planned distance"
+          >
+            <Text style={[styles.reset, { color: c.muted }]}>Use plan</Text>
+          </Pressable>
+        ) : null}
+      </View>
 
       <View style={styles.macroRow}>
         {MACROS.map((m) => (
@@ -381,13 +428,6 @@ function DayTargetsCard({
         </Text>
       ))}
 
-      {adjust ? (
-        <View style={[styles.adjust, { backgroundColor: c.surfaceAlt }]}>
-          <Ionicons name="swap-vertical-outline" size={15} color={c.muted} />
-          <Text style={[styles.adjustText, { color: c.muted }]}>{adjust}</Text>
-        </View>
-      ) : null}
-
       {warnings.length ? (
         <View style={styles.warnings}>
           {warnings.map((w) => (
@@ -407,14 +447,16 @@ function LastWeek({
   log,
   today,
   weeks,
+  dayKm,
 }: {
   profile: Profile;
   log: Log;
   today: DayKey;
   weeks: ReturnType<typeof useRunner>['weeks'];
+  dayKm: DayKm;
 }) {
   const { c } = useTheme();
-  const logged = loggedEnergyAvailability(profile, log, weeks, today);
+  const logged = loggedEnergyAvailability(profile, log, weeks, today, dayKm);
 
   const status = !logged
     ? null
@@ -550,8 +592,10 @@ const styles = StyleSheet.create({
   },
   noticeTitle: { fontSize: 13, fontWeight: '700' },
   noticeText: { fontSize: 12, fontWeight: '500', lineHeight: 17 },
-  adjust: { flexDirection: 'row', gap: 8, marginTop: 12, padding: 10, borderRadius: 12 },
-  adjustText: { flex: 1, fontSize: 12, fontWeight: '500', lineHeight: 17 },
+  kcalRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 },
+  distanceNote: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginTop: 4 },
+  distanceNoteText: { flex: 1, fontSize: 12, fontWeight: '500', lineHeight: 17 },
+  reset: { fontSize: 12, fontWeight: '700', lineHeight: 17 },
   warnings: { marginTop: 10, gap: 8 },
   warningRow: { flexDirection: 'row', gap: 6, alignItems: 'flex-start' },
   warningText: { flex: 1, fontSize: 12, fontWeight: '500', lineHeight: 17 },

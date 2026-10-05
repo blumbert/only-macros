@@ -88,6 +88,12 @@ every other running day = (weekly km − long run km) ÷ remaining running days
 rest days     = 0 km
 ```
 
+That's the plan. Distances set for single days, and days that have already
+happened, adjust it — see "Setting a day's distance" below.
+
+```
+```
+
 The long run is entered, not derived. Its share of the week varies too much to
 guess: a recreational runner's 10 of 30 miles is a third of the week, while an
 elite's 25 of 140 is under a fifth. Any fixed percentage would be badly wrong
@@ -100,10 +106,26 @@ energy cost per km barely changes with pace, so what makes a workout day
 different is how much of that energy has to come from carbohydrate — which the
 day-type carb targets already handle — not how many calories it burns.
 
-The even split across the remaining days is still an assumption. Workout days
-often run longer than easy days once warm-up and cool-down are counted, so an
-optional "workout day distance" field is worth considering if the error matters
-in practice.
+### Setting a day's distance
+
+The targets card shows the day's distance on a scroll wheel beside the
+calories, and the calories and macros follow it as it turns. Settling on a
+value saves it for that date; "Use plan" drops it back to the plan.
+
+```
+days set         = the distance set, whatever the day type (a run on a rest day counts)
+days already past = the plan's even share, unless set
+long run day     = the entered long run distance, unless set
+open days        = easy and workout days from today on that aren't set
+each open day    = (weekly km − everything above) ÷ open days, never below 0
+```
+
+So the default for today is what's left of the week over the running days left:
+run long on Tuesday and the rest of the week shortens, skip Wednesday and it
+lengthens. Seen from a later week every day is past; from an earlier week every
+day is open. Set distances belong to their dates, so a week carried forward
+from an earlier one doesn't bring that week's set days with it. Energy
+availability from the log uses the same per-day distances.
 
 **Body fat default when blank:** 10% male, 16% female — typical for trained
 distance runners, and deliberately on the lean side: a lower body-fat guess means a *higher* fat-free mass, which makes
