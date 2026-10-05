@@ -24,6 +24,16 @@ declaring Crash Data.)
 
 ---
 
+## 1.0.4
+
+Runner fueling now shows the day's mileage right beside your calorie target.
+Scroll it to what you're actually running and the calories and macros follow.
+Until you change it, it's what's left of your weekly mileage spread over the
+running days left, so a long day early in the week shortens the rest and a
+skipped day lengthens them.
+
+---
+
 ## 1.0.3
 
 New for runners: Runner fueling. Tap the button in the bottom-left for daily

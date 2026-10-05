@@ -21,7 +21,7 @@ HOW TO TEST
 No account, login, purchase or setup. Everything works offline on first launch.
 1. Type numbers into C, P and F and tap "Add to today".
 2. Tap the calendar button (bottom-right), then any day, then its pencil to edit it.
-3. Tap the runner button (bottom-left). Fill in the profile with any values and choose "Lose" as the goal, then enter a weekly mileage: today's targets appear. The arrows step through the next six days.
+3. Tap the runner button (bottom-left). Fill in the profile with any values and choose "Lose" as the goal, then enter a weekly mileage: today's targets appear. Scroll the distance beside the calories and the targets follow it. The arrows step through the next six days.
 4. To see a safety guardrail: tap the edit button on the profile card and choose "One in the hip (femoral neck), pelvis or sacrum" under bone stress injuries. The targets return to maintenance and the page explains why.
 
 DATA AND NETWORK
