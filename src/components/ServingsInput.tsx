@@ -32,7 +32,9 @@ export function ServingsInput({ value, onChange, compact }: Props) {
       <View
         style={[
           styles.field,
-          { height: size, minWidth: compact ? 48 : 60, backgroundColor: c.surfaceAlt, borderColor: c.border },
+          // A fixed width: left to size itself, the field took the whole row
+          // and pushed the food's name and the "servings" label out of view.
+          { height: size, width: compact ? 52 : 64, backgroundColor: c.surfaceAlt, borderColor: c.border },
         ]}
       >
         <TextInput
@@ -108,6 +110,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 6,
   },
-  input: { fontWeight: '700', textAlign: 'center', padding: 0, fontVariant: ['tabular-nums'] },
+  input: {
+    width: '100%',
+    minWidth: 0,
+    fontWeight: '700',
+    textAlign: 'center',
+    padding: 0,
+    fontVariant: ['tabular-nums'],
+  },
   unit: { fontWeight: '600', marginLeft: 2 },
 });
