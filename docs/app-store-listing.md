@@ -5,7 +5,16 @@ of the same name. The limits are Apple's; recount after any edit (as written:
 subtitle 23, promotional text 162, keywords 100, description 1,638).
 
 Subtitle, keywords and description only change with a new version; promotional
-text can be changed any time.
+text can be changed any time. The subtitle lives under App Information, not on
+the version page.
+
+**Screenshots** (as of October 2026's App Store Connect): upload them on the
+**Asset Library** page (the + by its title), then place them from the version's
+**Media Manager** (`…/version/inflight/media-manager/iphone`) under *iPhone with
+Face ID (large display)* with Browse Assets. The version page only shows its
+screenshot tab at desktop width. Removing screenshots from a version leaves
+them in the library. Keep the iPad screenshot: the app supports iPad, so one is
+required. Generate the images with `scripts/make-screenshots.cjs`.
 
 Ground rules for this copy: every claim has to be true of the app as shipped.
 No "#1", no "best", no weight-loss promises, no medical claims, and no other
