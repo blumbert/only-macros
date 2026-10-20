@@ -12,9 +12,13 @@ export type Entry = {
   c: number;
   p: number;
   f: number;
+  /** What it was, when it came from a saved food or a label ("Clif Bar ×2"). */
+  name?: string;
 };
 
 export type Log = Record<DayKey, Entry[]>;
+
+export const MAX_NAME = 60;
 
 export type Totals = { c: number; p: number; f: number };
 
@@ -37,13 +41,16 @@ function sanitize(raw: unknown): Log {
     for (const item of value) {
       if (!item || typeof item !== 'object') continue;
       const e = item as Partial<Entry>;
-      entries.push({
+      const entry: Entry = {
         id: typeof e.id === 'string' && e.id ? e.id : `${key}-${entries.length}-${Math.random()}`,
         at: num(e.at),
         c: num(e.c),
         p: num(e.p),
         f: num(e.f),
-      });
+      };
+      const name = typeof e.name === 'string' ? e.name.trim().slice(0, MAX_NAME) : '';
+      if (name) entry.name = name;
+      entries.push(entry);
     }
     if (entries.length) out[key] = entries;
   }

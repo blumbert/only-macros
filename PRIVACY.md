@@ -1,6 +1,6 @@
 # Privacy Policy — Only Macros
 
-_Last updated: 24 September 2026_
+_Last updated: 20 October 2026_
 
 ## Short version
 
@@ -18,7 +18,20 @@ kind of day job you have, your goal, your bone stress injury history, your
 menstrual cycle if you choose to answer, and your weekly mileage and training
 days. They are used only to calculate your targets, on your phone.
 
+Foods you save — a name, its carbohydrates, protein and fat per serving, and a
+serving size if you give one — are saved the same way, and so is the name of a
+food when you add it to a day.
+
 That is the only data the app records.
+
+## Camera and photos
+
+If you scan a nutrition facts label, the app asks to use your camera, or lets
+you choose a photo from your library. The photo is read on your phone by
+Apple's built-in text recognition, only to find the numbers on the label. It
+is not uploaded anywhere, and the app does not keep it: only the numbers you
+choose to add or save are stored. Camera and photo access can be turned off at
+any time in your phone's Settings; everything else in the app keeps working.
 
 ## Where it goes
 

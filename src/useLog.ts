@@ -2,10 +2,24 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState, type AppStateStatus } from 'react-native';
 
 import { fromDayKey, msUntilNextMidnight, todayKey, type DayKey } from './date';
-import { loadLog, mergeLogs, saveLog, type Entry, type Log, type Totals } from './storage';
+import {
+  loadLog,
+  MAX_NAME,
+  mergeLogs,
+  saveLog,
+  type Entry,
+  type Log,
+  type Totals,
+} from './storage';
 
 let counter = 0;
 const newId = () => `${Date.now().toString(36)}-${(counter++).toString(36)}`;
+
+/** An entry's name, trimmed, or nothing at all rather than an empty string. */
+const named = (name?: string) => {
+  const trimmed = name?.trim().slice(0, MAX_NAME);
+  return trimmed ? { name: trimmed } : {};
+};
 
 /**
  * Timestamp for an entry being written against `day`. Today gets the real
@@ -86,11 +100,11 @@ export function useLog() {
 
   const addRef = useRef<{ day: DayKey; id: string } | null>(null);
 
-  const add = useCallback((c: number, p: number, f: number) => {
+  const add = useCallback((c: number, p: number, f: number, name?: string) => {
     // Read the clock at the moment of the tap rather than trusting `today` —
     // an add at 11:59:59 lands on the day it was actually made.
     const day = todayKey();
-    const entry: Entry = { id: newId(), at: Date.now(), c, p, f };
+    const entry: Entry = { id: newId(), at: Date.now(), c, p, f, ...named(name) };
     setToday(day);
     setLog((prev) => ({ ...prev, [day]: [...(prev[day] ?? []), entry] }));
     addRef.current = { day, id: entry.id };
@@ -98,8 +112,8 @@ export function useLog() {
   }, []);
 
   /** Add to any day — how the calendar backfills a day that was missed. */
-  const addOn = useCallback((day: DayKey, values: Totals) => {
-    const entry: Entry = { id: newId(), at: stampFor(day), ...values };
+  const addOn = useCallback((day: DayKey, values: Totals, name?: string) => {
+    const entry: Entry = { id: newId(), at: stampFor(day), ...values, ...named(name) };
     setLog((prev) => ({ ...prev, [day]: [...(prev[day] ?? []), entry] }));
     return entry;
   }, []);

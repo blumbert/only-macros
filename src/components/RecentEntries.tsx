@@ -116,13 +116,20 @@ export function RecentEntries({ entries, onSave, onDelete }: Props) {
                 </View>
               ) : (
                 <>
-                  <View style={styles.rowMain}>
-                    <Text style={[styles.time, { color: c.faint }]}>{formatTime(entry.at)}</Text>
-                    <View style={styles.chips}>
-                      <Text style={[styles.chip, { color: c.macro.c }]}>{formatGrams(entry.c)}C</Text>
-                      <Text style={[styles.chip, { color: c.macro.p }]}>{formatGrams(entry.p)}P</Text>
-                      <Text style={[styles.chip, { color: c.macro.f }]}>{formatGrams(entry.f)}F</Text>
+                  <View style={styles.rowText}>
+                    <View style={styles.rowMain}>
+                      <Text style={[styles.time, { color: c.faint }]}>{formatTime(entry.at)}</Text>
+                      <View style={styles.chips}>
+                        <Text style={[styles.chip, { color: c.macro.c }]}>{formatGrams(entry.c)}C</Text>
+                        <Text style={[styles.chip, { color: c.macro.p }]}>{formatGrams(entry.p)}P</Text>
+                        <Text style={[styles.chip, { color: c.macro.f }]}>{formatGrams(entry.f)}F</Text>
+                      </View>
                     </View>
+                    {entry.name ? (
+                      <Text style={[styles.name, { color: c.muted }]} numberOfLines={1}>
+                        {entry.name}
+                      </Text>
+                    ) : null}
                   </View>
                   <View style={styles.actions}>
                     <Pressable
@@ -180,7 +187,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 12,
   },
+  rowText: { flexShrink: 1 },
   rowMain: { flexDirection: 'row', alignItems: 'baseline', gap: 12, flexShrink: 1 },
+  name: { fontSize: 13, fontWeight: '600', marginTop: 3 },
   time: { fontSize: 12, fontWeight: '600', fontVariant: ['tabular-nums'] },
   chips: { flexDirection: 'row', gap: 10 },
   chip: { fontSize: 14, fontWeight: '700', fontVariant: ['tabular-nums'] },

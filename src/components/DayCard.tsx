@@ -194,6 +194,11 @@ export function DayCard({ day, entries, editable, onAdd, onDelete, onSetTotals }
                 ]}
               >
                 <Text style={[styles.entryTime, { color: c.faint }]}>{formatTime(entry.at)}</Text>
+                {entry.name ? (
+                  <Text style={[styles.entryName, { color: c.muted }]} numberOfLines={1}>
+                    {entry.name}
+                  </Text>
+                ) : null}
                 <View style={styles.entryChips}>
                   {MACROS.map((m) => (
                     <Text key={m.key} style={[styles.entryChip, { color: c.macro[m.key] }]}>
@@ -371,6 +376,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   entryTime: { fontSize: 12, fontWeight: '600', fontVariant: ['tabular-nums'] },
+  entryName: { flexShrink: 1, fontSize: 13, fontWeight: '600' },
   entryChips: { flexDirection: 'row', gap: 10, flexShrink: 1, marginLeft: 'auto' },
   entryChip: { fontSize: 14, fontWeight: '700', fontVariant: ['tabular-nums'] },
 });

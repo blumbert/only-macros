@@ -24,6 +24,19 @@ declaring Crash Data.)
 
 ---
 
+## 1.0.5
+
+Scan a nutrition facts label: take a photo, say how many servings, and the
+carbs, protein and fat are added for you — to today or any day before. The
+label is read on your phone and the photo isn't kept.
+
+Saved foods: keep the foods you eat often, then pick one under the macro fields
+and set the servings. Save straight from a scanned label, or add your own.
+
+The calendar and Runner fueling have moved into the new menu at the top right.
+
+---
+
 ## 1.0.4
 
 Runner fueling now shows the day's mileage right beside your calorie target.

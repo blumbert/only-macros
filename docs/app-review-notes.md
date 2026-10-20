@@ -13,16 +13,17 @@ DEVICES TESTED
 Physical iPhone 14 running iOS 18.7.8, installed via TestFlight.
 
 WHAT THE APP DOES
-Only Macros is a manual macro logger for people who already know their numbers. The main screen has three fields (grams of carbohydrate, protein and fat), an "Add to today" button, and the day's totals and calories (carbs x 4 + protein x 4 + fat x 9). A calendar (bottom-right button) shows past days; tapping a day shows its breakdown, and the pencil on it edits that day's entries.
+Only Macros is a manual macro logger for people who already know their numbers. The main screen has three fields (grams of carbohydrate, protein and fat), an "Add to today" button, and the day's totals and calories (carbs x 4 + protein x 4 + fat x 9). Everything else is in the menu (top-right button): Calendar, Scan a label, Saved foods and Runner fueling.
 
-New in 1.0.3: an optional Runner fueling page (bottom-left button). From a short profile and the user's weekly training, it calculates daily calorie, carbohydrate, protein and fat targets using published sports-nutrition research. It never appears on the main screen.
+Scan a label reads the carbohydrate, protein and fat off a photo of a nutrition facts label using Apple's on-device Vision text recognition, multiplies them by the number of servings, and adds them to today or an earlier day. The photo is never uploaded or kept. Saved foods holds foods with their macros per serving, which can be picked under the main screen's fields.
 
 HOW TO TEST
 No account, login, purchase or setup. Everything works offline on first launch.
 1. Type numbers into C, P and F and tap "Add to today".
-2. Tap the calendar button (bottom-right), then any day, then its pencil to edit it.
-3. Tap the runner button (bottom-left). Fill in the profile with any values and choose "Lose" as the goal, then enter a weekly mileage: today's targets appear. Scroll the distance beside the calories and the targets follow it. The arrows step through the next six days.
-4. To see a safety guardrail: tap the edit button on the profile card and choose "One in the hip (femoral neck), pelvis or sacrum" under bone stress injuries. The targets return to maintenance and the page explains why.
+2. Menu > Scan a label: take or choose a photo of any nutrition facts label. The numbers appear in editable fields; set 2 servings, switch on "Save to my foods", name it, and tap Add. The arrows at the top move the day back.
+3. On the main screen, tap "Saved food" under the fields and pick that food; the fields fill in, and the servings buttons change them.
+4. Menu > Calendar, then any day, then its pencil to edit it.
+5. Menu > Runner fueling. Fill in the profile with any values and choose "Lose" as the goal, then enter a weekly mileage: today's targets appear. Scroll the distance beside the calories and the targets follow it. To see a safety guardrail, edit the profile and choose "One in the hip (femoral neck), pelvis or sacrum" under bone stress injuries: the targets return to maintenance and the page explains why.
 
 DATA AND NETWORK
 The app makes no network requests and contains no analytics, advertising, crash reporting or other third-party SDKs. Food entries and the runner profile are stored only on the device and are deleted with the app. App Privacy is declared as "Data Not Collected".

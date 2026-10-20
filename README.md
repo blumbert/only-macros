@@ -53,12 +53,23 @@ be on any SDK.
 
 | File | What it does |
 | --- | --- |
-| `App.tsx` | The single screen: three inputs, add button, totals, calendar FAB |
+| `App.tsx` | The main screen: three inputs, saved-food picker, add button, totals, and the menu (top right) that opens every other page |
 | `src/useLog.ts` | Holds the log, persists it, and handles the midnight rollover |
 | `src/storage.ts` | AsyncStorage read/write plus the totals and calorie math |
 | `src/date.ts` | Local-timezone day keys (`YYYY-MM-DD`) and date formatting |
 | `src/theme.ts` | Light/dark palettes, macro colours, number formatting |
-| `src/components/` | `MacroField`, `TotalsPanel`, `CalendarSheet` |
+| `src/foods.ts` | Saved foods (macros per serving), persisted like the log |
+| `src/nutrition/` | `parseLabel` (nutrition-label text → carbs/protein/fat, tested) and `useLabelScan` (camera or photo → text → parse) |
+| `modules/label-text/` | A local Expo module: Apple Vision text recognition, on the device. Autolinked from `./modules`; iOS only |
+| `src/components/` | `MacroField`, `TotalsPanel`, `AppMenu`, and one sheet per menu page: `CalendarSheet`, `LabelSheet`, `FoodsSheet`, `RunnerSheet` |
+
+**Label scanning needs a real build.** `modules/label-text` is native code, so
+Expo Go and the web don't have it: there the Scan a label page says so and
+takes the numbers typed in instead. It reads text with Apple's Vision framework
+rather than a third-party OCR library so that nothing leaves the phone and App
+Privacy stays at "Data Not Collected". It passes the photo's orientation on to
+Vision — camera photos are stored sideways with an orientation flag, and
+without it Vision reads the label rotated.
 
 **Calories** are `carbs × 4 + protein × 4 + fat × 9`.
 

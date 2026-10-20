@@ -2,7 +2,7 @@
   "expo": {
     "name": "Only Macros",
     "slug": "only-macros",
-    "version": "1.0.4",
+    "version": "1.0.5",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "macros",
@@ -33,7 +33,15 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-font"
+      "expo-font",
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "Macros uses the camera to read the numbers off a nutrition facts label. The photo is read on your phone and isn't saved.",
+          "photosPermission": "Macros reads the numbers off a photo of a nutrition facts label that you choose. The photo is read on your phone and isn't saved.",
+          "microphonePermission": false
+        }
+      ]
     ],
     "extra": {
       "eas": {
