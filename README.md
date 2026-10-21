@@ -59,6 +59,8 @@ be on any SDK.
 | `src/date.ts` | Local-timezone day keys (`YYYY-MM-DD`) and date formatting |
 | `src/theme.ts` | Light/dark palettes, macro colours, number formatting |
 | `src/foods.ts` | Saved foods (macros per serving), persisted like the log |
+| `src/fueling/health.ts` | Apple Health: reads running workouts on the device (read-only, workouts only). iOS build only |
+| `src/fueling/healthDays.ts` | Turns those runs into a distance per day and merges them under hand-set ones (tested) |
 | `src/nutrition/` | `parseLabel` (nutrition-label text → carbs/protein/fat, tested) and `useLabelScan` (camera or photo → text → parse) |
 | `modules/label-text/` | A local Expo module: Apple Vision text recognition, on the device. Autolinked from `./modules`; iOS only |
 | `src/components/` | `MacroField`, `TotalsPanel`, `AppMenu`, and one sheet per menu page: `CalendarSheet`, `LabelSheet`, `FoodsSheet`, `RunnerSheet` |

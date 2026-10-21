@@ -17,24 +17,27 @@ Only Macros is a manual macro logger for people who already know their numbers. 
 
 Scan a label reads the carbohydrate, protein and fat off a photo of a nutrition facts label using Apple's on-device Vision text recognition, multiplies them by the number of servings, and adds them to today or an earlier day. The photo is never uploaded or kept. Saved foods holds foods with their macros per serving, which can be picked under the main screen's fields.
 
+HealthKit (optional, Runner fueling page): the app requests read access to workouts only, and uses the date and distance of running workouts from the last 7 days to set each day's mileage, which sets that day's calorie target and the 7-day energy availability. It writes nothing to Health, reads no other types, and the data never leaves the device.
+
 HOW TO TEST
 No account, login, purchase or setup. Everything works offline on first launch.
 1. Type numbers into C, P and F and tap "Add to today".
 2. Menu > Scan a label: take or choose a photo of any nutrition facts label. The numbers appear in editable fields; set 2 servings, switch on "Save to my foods", name it, and tap Add. The arrows at the top move the day back.
 3. On the main screen, tap "Saved food" under the fields and pick that food; the fields fill in, and the servings buttons change them.
 4. Menu > Calendar, then any day, then its pencil to edit it.
-5. Menu > Runner fueling. Fill in the profile with any values and choose "Lose" as the goal, then enter a weekly mileage: today's targets appear. Scroll the distance beside the calories and the targets follow it. To see a safety guardrail, edit the profile and choose "One in the hip (femoral neck), pelvis or sacrum" under bone stress injuries: the targets return to maintenance and the page explains why.
+5. Menu > Runner fueling. Fill in the profile with any values and choose "Lose" as the goal, then enter a weekly mileage: today's targets appear. Scroll the distance beside the calories and the targets follow it; the arrows step back 7 days and ahead 6. To see a safety guardrail, edit the profile and choose "One in the hip (femoral neck), pelvis or sacrum" under bone stress injuries: the targets return to maintenance and the page explains why.
+6. On the same page, tap "Connect Apple Health" and allow Workouts. Any running workouts in Health from the last 7 days fill in those days' distances.
 
 DATA AND NETWORK
-The app makes no network requests and contains no analytics, advertising, crash reporting or other third-party SDKs. Food entries and the runner profile are stored only on the device and are deleted with the app. App Privacy is declared as "Data Not Collected".
+The app makes no network requests and contains no analytics, advertising, crash reporting or other third-party SDKs. Food entries, the runner profile and distances read from Health are stored only on the device and are deleted with the app. App Privacy is declared as "Data Not Collected".
 
 HEALTH AND FITNESS
-The app is not a medical device and does not diagnose or treat any condition. The runner page states that its figures are estimates from published research, not medical advice, and lists its sources in the app, including the ACSM / Academy of Nutrition and Dietetics / Dietitians of Canada joint position statement on nutrition and athletic performance (2016) and the IOC consensus statement on Relative Energy Deficiency in Sport and its Clinical Assessment Tool (2023).
+The app is not a medical device and does not diagnose or treat any condition. The runner page states that its figures are estimates from published research, not medical advice, and lists its sources in the app, including the ACSM/AND/DC joint position statement on nutrition and athletic performance (2016) and the IOC consensus statement on Relative Energy Deficiency in Sport (2023).
 
 The page is designed to prevent under-fuelling, a recognised risk among runners, rather than to promote weight loss:
 - A weight-loss goal is capped at a 300 kcal/day deficit, applied only on rest and easy days. Workout and long-run days are always at maintenance.
 - No deficit is set for users under 18, for users reporting a bone stress injury history or missed periods that the IOC tool treats as a primary warning sign, or when the user's own logged food shows low energy availability. The page explains why and points the user to a doctor, never to eating less.
-- There are no body-weight or body-size targets, no weight-loss promises, and no before/after or body-image content.
+- No body-weight or body-size targets, weight-loss promises or body-image content.
 - The injury and menstrual questions stay on the device, and the menstrual question is optional.
 
 The app contains no food database and no licensed or third-party content. All code and artwork is original.

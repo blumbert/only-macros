@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Modal,
@@ -12,7 +12,9 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { addDays, fromDayKey, shortDate, type DayKey } from '../date';
+import { addDays, formatTime, fromDayKey, shortDate, type DayKey } from '../date';
+import { healthAvailable, readRecentRuns, requestHealthAccess } from '../fueling/health';
+import { distanceSource, mergeDayKm } from '../fueling/healthDays';
 import {
   dayTargets,
   loggedEnergyAvailability,
@@ -126,6 +128,51 @@ export function RunnerSheet({ visible, onClose, log, today }: Props) {
 
   const profile = runner.profile;
 
+  // Apple Health, when connected, speaks for each recent day's distance; a
+  // distance set by hand still wins over it.
+  const canUseHealth = useMemo(healthAvailable, []);
+  const { setHealth } = runner;
+  const healthConnected = canUseHealth && runner.health.connected;
+  const healthDays = healthConnected ? runner.health.days : null;
+  const dayKm = useMemo(
+    () => mergeDayKm(runner.dayKm, healthDays, today),
+    [runner.dayKm, healthDays, today],
+  );
+  const [healthBusy, setHealthBusy] = useState(false);
+  const [healthError, setHealthError] = useState<string | null>(null);
+
+  const syncHealth = useCallback(async () => {
+    setHealthBusy(true);
+    setHealthError(null);
+    try {
+      const read = await readRecentRuns(today);
+      setHealth({ connected: true, days: read.visible ? read.days : {}, syncedAt: Date.now() });
+    } catch {
+      setHealthError('Couldn’t read Apple Health just now. Try again in a moment.');
+    } finally {
+      setHealthBusy(false);
+    }
+  }, [today, setHealth]);
+
+  // Every time the page opens, so the days are as fresh as the runs.
+  useEffect(() => {
+    if (visible && runner.hydrated && healthConnected) void syncHealth();
+  }, [visible, runner.hydrated, healthConnected, syncHealth]);
+
+  const connectHealth = async () => {
+    setHealthBusy(true);
+    setHealthError(null);
+    try {
+      await requestHealthAccess();
+    } catch {
+      setHealthBusy(false);
+      setHealthError('Couldn’t open Apple Health’s permission screen.');
+      return;
+    }
+    // Connecting flips `healthConnected`, which runs the first sync.
+    setHealth({ connected: true, days: {} });
+  };
+
   return (
     <Modal
       visible={visible}
@@ -183,9 +230,26 @@ export function RunnerSheet({ visible, onClose, log, today }: Props) {
                     log={log}
                     today={today}
                     weeks={runner.weeks}
-                    dayKm={runner.dayKm}
+                    dayKm={dayKm}
+                    manualKm={runner.dayKm}
+                    healthDays={healthDays}
                     onSetKm={runner.setDayKm}
                   />
+                  {canUseHealth ? (
+                    <HealthCard
+                      connected={healthConnected}
+                      visible={Object.keys(runner.health.days).length > 0}
+                      syncedAt={runner.health.syncedAt}
+                      busy={healthBusy}
+                      error={healthError}
+                      onConnect={() => void connectHealth()}
+                      onRefresh={() => void syncHealth()}
+                      onStop={() => {
+                        setHealthError(null);
+                        setHealth({ connected: false, days: {} });
+                      }}
+                    />
+                  ) : null}
                   <TrainingWeekEditor
                     weeks={runner.weeks}
                     today={today}
@@ -197,7 +261,8 @@ export function RunnerSheet({ visible, onClose, log, today }: Props) {
                     log={log}
                     today={today}
                     weeks={runner.weeks}
-                    dayKm={runner.dayKm}
+                    dayKm={dayKm}
+                    fromHealth={!!healthDays && Object.keys(healthDays).length > 0}
                   />
                   <ProfileSummary
                     profile={profile}
@@ -251,6 +316,8 @@ function DayTargetsCard({
   today,
   weeks,
   dayKm,
+  manualKm,
+  healthDays,
   onSetKm,
 }: {
   profile: Profile;
@@ -258,7 +325,11 @@ function DayTargetsCard({
   log: Log;
   today: DayKey;
   weeks: ReturnType<typeof useRunner>['weeks'];
+  /** Every known distance: hand-set over Apple Health. */
   dayKm: DayKm;
+  /** Just the hand-set ones, to say where a day's distance came from. */
+  manualKm: DayKm;
+  healthDays: Record<DayKey, number> | null;
   onSetKm: (day: DayKey, km: number | null) => void;
 }) {
   const { c } = useTheme();
@@ -336,17 +407,29 @@ function DayTargetsCard({
   const km = preview !== null ? toKm(preview) : plan.km;
   const t = dayTargets(profile, { type: plan.type, km }, logged?.ea ?? null);
 
-  const distanceNote = plan.set
-    ? past
-      ? 'The distance you ran this day, as you set it.'
-      : 'Distance you set for this day. The rest of the week’s running days split what’s left.'
-    : past
-      ? 'The plan’s distance for this day. Scroll to what you actually ran — it makes your recent energy availability more accurate.'
-      : plan.type === 'long'
-      ? 'Your long run, from this week’s plan.'
-      : plan.type === 'rest'
-        ? 'Rest day. Scroll if you run anyway.'
-        : 'What’s left of this week’s mileage, split over the running days left. Scroll to change it.';
+  const source = distanceSource(day, manualKm, healthDays, today);
+  // What "undo" goes back to: Apple Health's figure where it covers the day,
+  // the plan everywhere else.
+  const underneath = distanceSource(day, {}, healthDays, today);
+
+  const distanceNote =
+    source === 'manual'
+      ? past
+        ? 'The distance you ran this day, as you set it.'
+        : 'Distance you set for this day. The rest of the week’s running days split what’s left.'
+      : source === 'health'
+        ? plan.km > 0
+          ? past
+            ? 'From your runs in Apple Health. Scroll to change it.'
+            : 'Today’s run from Apple Health. The rest of the week’s running days split what’s left.'
+          : 'No run in Apple Health this day, so it counts as 0. Scroll if you ran without recording it.'
+        : past
+          ? 'The plan’s distance for this day. Scroll to what you actually ran — it makes your recent energy availability more accurate.'
+          : plan.type === 'long'
+            ? 'Your long run, from this week’s plan.'
+            : plan.type === 'rest'
+              ? 'Rest day. Scroll if you run anyway.'
+              : 'What’s left of this week’s mileage, split over the running days left. Scroll to change it.';
 
   const grams = { c: t.carbsG, p: t.proteinG, f: t.fatG };
   const range = RULES.carbs[plan.type];
@@ -403,14 +486,20 @@ function DayTargetsCard({
       </View>
       <View style={styles.distanceNote}>
         <Text style={[styles.distanceNoteText, { color: c.faint }]}>{distanceNote}</Text>
-        {plan.set ? (
+        {source === 'manual' ? (
           <Pressable
             onPress={() => onSetKm(day, null)}
             hitSlop={10}
             accessibilityRole="button"
-            accessibilityLabel="Go back to the planned distance"
+            accessibilityLabel={
+              underneath === 'health'
+                ? 'Go back to the distance from Apple Health'
+                : 'Go back to the planned distance'
+            }
           >
-            <Text style={[styles.reset, { color: c.muted }]}>Use plan</Text>
+            <Text style={[styles.reset, { color: c.muted }]}>
+              {underneath === 'health' ? 'Use Health' : 'Use plan'}
+            </Text>
           </Pressable>
         ) : null}
       </View>
@@ -467,12 +556,15 @@ function LastWeek({
   today,
   weeks,
   dayKm,
+  fromHealth,
 }: {
   profile: Profile;
   log: Log;
   today: DayKey;
   weeks: ReturnType<typeof useRunner>['weeks'];
   dayKm: DayKm;
+  /** Whether Apple Health is supplying the recent days' distances. */
+  fromHealth: boolean;
 }) {
   const { c } = useTheme();
   const logged = loggedEnergyAvailability(profile, log, weeks, today, dayKm);
@@ -505,8 +597,9 @@ function LastWeek({
             low energy availability.
           </Text>
           <Text style={[styles.why, { color: c.faint }]}>
-            Each day counts its planned distance unless you set what you actually ran — step
-            back with the arrow on the card above to fix any of the last {MAX_DAYS_BACK} days.
+            {fromHealth
+              ? 'Each day counts your runs from Apple Health, or a distance you set by hand — step back with the arrow on the card above to change any of them.'
+              : `Each day counts its planned distance unless you set what you actually ran — step back with the arrow on the card above to fix any of the last ${MAX_DAYS_BACK} days.`}
           </Text>
           <Text style={[styles.why, { color: c.faint }]}>
             Only as accurate as what you logged. Today isn&apos;t counted until it&apos;s over.
@@ -518,6 +611,109 @@ function LastWeek({
           to see how your actual intake compares.
         </Text>
       )}
+    </View>
+  );
+}
+
+/**
+ * Connect, refresh or stop Apple Health. Only shown where Health can be read
+ * at all — a real iPhone build, not Expo Go or the web.
+ */
+function HealthCard({
+  connected,
+  visible,
+  syncedAt,
+  busy,
+  error,
+  onConnect,
+  onRefresh,
+  onStop,
+}: {
+  connected: boolean;
+  /** Whether the last sync could see any runs. */
+  visible: boolean;
+  syncedAt?: number;
+  busy: boolean;
+  error: string | null;
+  onConnect: () => void;
+  onRefresh: () => void;
+  onStop: () => void;
+}) {
+  const { c } = useTheme();
+  const checked = connected && syncedAt !== undefined;
+
+  let body: string;
+  if (!connected) {
+    body =
+      'Fill each day’s mileage in from your runs in Apple Health — Apple Watch, and apps like Garmin Connect or Strava that save runs there. Read on this phone only; nothing is sent anywhere.';
+  } else if (!checked) {
+    body = 'Checking Apple Health for your runs…';
+  } else if (visible) {
+    body =
+      'Each of the last 7 days uses your runs from Apple Health. A day with no run counts as 0 — step back on the card above and scroll a day to override it.';
+  } else {
+    body =
+      'Macros can’t see any runs in Apple Health from the last 2 months, so it’s using your plan. If you’ve recorded runs, allow access in Settings › Health › Data Access & Devices › Macros, then refresh.';
+  }
+
+  return (
+    <View style={[styles.card, { backgroundColor: c.surface, borderColor: c.border }]}>
+      <View style={styles.healthHeader}>
+        <Ionicons name="heart" size={14} color={c.macro.c} />
+        <Text style={[styles.eyebrow, { color: c.muted }]}>APPLE HEALTH</Text>
+        {checked && !busy ? (
+          <Text style={[styles.healthSynced, { color: c.faint }]}>
+            Updated {formatTime(syncedAt!)}
+          </Text>
+        ) : null}
+      </View>
+      <Text style={[styles.why, { color: c.muted }]}>{body}</Text>
+      {error ? <Text style={[styles.why, { color: c.macro.c }]}>{error}</Text> : null}
+
+      <View style={styles.healthActions}>
+        {!connected ? (
+          <Pressable
+            onPress={onConnect}
+            disabled={busy}
+            accessibilityRole="button"
+            style={({ pressed }) => [
+              styles.healthPrimary,
+              { backgroundColor: c.accent, opacity: busy ? 0.4 : pressed ? 0.75 : 1 },
+            ]}
+          >
+            <Text style={[styles.healthPrimaryLabel, { color: c.onAccent }]}>
+              Connect Apple Health
+            </Text>
+          </Pressable>
+        ) : (
+          <>
+            <Pressable
+              onPress={onRefresh}
+              disabled={busy}
+              hitSlop={8}
+              accessibilityRole="button"
+              style={({ pressed }) => [
+                styles.healthSecondary,
+                { borderColor: c.border, opacity: busy ? 0.4 : pressed ? 0.6 : 1 },
+              ]}
+            >
+              <Text style={[styles.healthSecondaryLabel, { color: c.text }]}>
+                {busy ? 'Reading…' : 'Refresh'}
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={onStop}
+              hitSlop={8}
+              accessibilityRole="button"
+              style={({ pressed }) => [styles.healthStop, { opacity: pressed ? 0.6 : 1 }]}
+            >
+              <Text style={[styles.healthSecondaryLabel, { color: c.muted }]}>
+                Stop using Health
+              </Text>
+            </Pressable>
+          </>
+        )}
+      </View>
     </View>
   );
 }
@@ -624,6 +820,20 @@ const styles = StyleSheet.create({
   warningText: { flex: 1, fontSize: 12, fontWeight: '500', lineHeight: 17 },
   eaRow: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' },
   eaStatus: { fontSize: 13, fontWeight: '700' },
+  healthHeader: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  healthSynced: { marginLeft: 'auto', fontSize: 11, fontWeight: '600' },
+  healthActions: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 12 },
+  healthPrimary: { height: 42, paddingHorizontal: 16, borderRadius: 12, justifyContent: 'center' },
+  healthPrimaryLabel: { fontSize: 15, fontWeight: '700' },
+  healthSecondary: {
+    height: 36,
+    paddingHorizontal: 14,
+    borderRadius: 10,
+    borderWidth: StyleSheet.hairlineWidth * 2,
+    justifyContent: 'center',
+  },
+  healthSecondaryLabel: { fontSize: 14, fontWeight: '600' },
+  healthStop: { paddingVertical: 8 },
   summary: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   summaryText: { fontSize: 14, fontWeight: '600', marginTop: 6 },
   sourcesToggle: {

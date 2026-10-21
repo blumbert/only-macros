@@ -1,6 +1,6 @@
 # Privacy Policy — Only Macros
 
-_Last updated: 20 October 2026_
+_Last updated: 21 October 2026_
 
 ## Short version
 
@@ -22,7 +22,19 @@ Foods you save — a name, its carbohydrates, protein and fat per serving, and a
 serving size if you give one — are saved the same way, and so is the name of a
 food when you add it to a day.
 
+If you connect Apple Health, the distance it reports for each recent day is
+saved the same way.
+
 That is the only data the app records.
+
+## Apple Health
+
+If you connect Apple Health on the Runner fueling page, the app reads your
+running workouts from it — only their date and distance — to fill in how far
+you ran on each of the last seven days. That is used to calculate your targets
+on your phone and is never sent anywhere. The app does not write anything to
+Apple Health, and it reads no other health data. You can stop it in the app,
+and turn off its access any time in Settings › Health › Data Access & Devices.
 
 ## Camera and photos
 

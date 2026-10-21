@@ -24,6 +24,19 @@ declaring Crash Data.)
 
 ---
 
+## 1.0.6
+
+Runner fueling can now read your runs from Apple Health. Connect it once and
+each of the last 7 days fills in with how far you actually ran — from Apple
+Watch, or apps like Garmin Connect and Strava that save runs to Health — so
+your targets and your recent energy availability use real mileage. It's read
+on your phone and never sent anywhere.
+
+You can also step back through the last 7 days and set any day's distance by
+hand, which always wins over Health.
+
+---
+
 ## 1.0.5
 
 Scan a nutrition facts label: take a photo, say how many servings, and the

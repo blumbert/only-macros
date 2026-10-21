@@ -15,11 +15,30 @@ export type RunnerState = {
   weeks: Weeks;
   /** Distances set for single days, overriding the week's plan for that day. */
   dayKm: DayKm;
+  health: HealthState;
+};
+
+/**
+ * Apple Health. `days` is the last sync's kilometres per day, empty when Health
+ * couldn't see any runs, so a denied permission never reads as days off.
+ */
+export type HealthState = {
+  connected: boolean;
+  days: Record<DayKey, number>;
+  syncedAt?: number;
 };
 
 const STORAGE_KEY = 'macrotracker.runner.v1';
 
-const EMPTY: RunnerState = { profile: null, units: 'imperial', weeks: {}, dayKm: {} };
+const NO_HEALTH: HealthState = { connected: false, days: {} };
+
+const EMPTY: RunnerState = {
+  profile: null,
+  units: 'imperial',
+  weeks: {},
+  dayKm: {},
+  health: NO_HEALTH,
+};
 
 const oneOf = <T extends string>(value: unknown, allowed: readonly T[], fallback: T): T =>
   allowed.includes(value as T) ? (value as T) : fallback;
@@ -62,6 +81,18 @@ function sanitizeWeek(raw: unknown): Week | null {
   };
 }
 
+/** Kilometres keyed by date. Zero is a real answer — a skipped run, a day off. */
+function sanitizeDayKm(raw: unknown): DayKm {
+  const out: DayKm = {};
+  if (!raw || typeof raw !== 'object') return out;
+  for (const [key, value] of Object.entries(raw as Record<string, unknown>)) {
+    if (isDayKey(key) && typeof value === 'number' && Number.isFinite(value) && value >= 0) {
+      out[key] = value;
+    }
+  }
+  return out;
+}
+
 /** Anything that isn't recognisably ours is dropped rather than crashing the app. */
 function sanitize(raw: unknown): RunnerState {
   if (!raw || typeof raw !== 'object') return EMPTY;
@@ -73,20 +104,17 @@ function sanitize(raw: unknown): RunnerState {
       if (isDayKey(key) && week) weeks[key] = week;
     }
   }
-  // Zero is a real answer here — a day set to 0 is a skipped run.
-  const dayKm: DayKm = {};
-  if (r.dayKm && typeof r.dayKm === 'object') {
-    for (const [key, value] of Object.entries(r.dayKm as Record<string, unknown>)) {
-      if (isDayKey(key) && typeof value === 'number' && Number.isFinite(value) && value >= 0) {
-        dayKm[key] = value;
-      }
-    }
-  }
+  const h = r.health && typeof r.health === 'object' ? (r.health as Record<string, unknown>) : {};
   return {
     profile: sanitizeProfile(r.profile),
     units: oneOf<Units>(r.units, ['imperial', 'metric'], 'imperial'),
     weeks,
-    dayKm,
+    dayKm: sanitizeDayKm(r.dayKm),
+    health: {
+      connected: h.connected === true,
+      days: sanitizeDayKm(h.days),
+      ...(positive(h.syncedAt) ? { syncedAt: positive(h.syncedAt)! } : {}),
+    },
   };
 }
 
@@ -125,6 +153,7 @@ export function useRunner() {
         units: current.profile ? current.units : stored.units,
         weeks: { ...stored.weeks, ...current.weeks },
         dayKm: { ...stored.dayKm, ...current.dayKm },
+        health: current.health.syncedAt ? current.health : stored.health,
       }));
       setHydrated(true);
     });
@@ -155,5 +184,9 @@ export function useRunner() {
     });
   }, []);
 
-  return { ...state, hydrated, setProfile, setWeek, setDayKm };
+  const setHealth = useCallback((health: HealthState) => {
+    setState((prev) => ({ ...prev, health }));
+  }, []);
+
+  return { ...state, hydrated, setProfile, setWeek, setDayKm, setHealth };
 }
