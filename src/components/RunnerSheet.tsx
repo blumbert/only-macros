@@ -56,11 +56,19 @@ const DAY_LABEL: Record<DayType, string> = {
  */
 const MAX_DAYS_AHEAD = 6;
 
+/**
+ * How far back. Exactly the days the recent energy availability reads, so the
+ * distance actually run on each of them can be set and that number gets
+ * sharper; further back changes nothing the page shows.
+ */
+const MAX_DAYS_BACK = RULES.loggedEa.lookbackDays;
+
 const WEEKDAYS = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
 
 function dayHeading(day: DayKey, offset: number): string {
   if (offset === 0) return 'TODAY';
   if (offset === 1) return 'TOMORROW';
+  if (offset === -1) return 'YESTERDAY';
   return `${WEEKDAYS[fromDayKey(day).getDay()]} · ${shortDate(day).toUpperCase()}`;
 }
 
@@ -254,9 +262,10 @@ function DayTargetsCard({
   onSetKm: (day: DayKey, km: number | null) => void;
 }) {
   const { c } = useTheme();
-  // Days ahead of today, so meal prep can plan for the days it covers. Resets
-  // to today whenever the day rolls over.
+  // Days from today: ahead for meal prep, back to set what was actually run.
+  // Resets to today whenever the day rolls over.
   const [offset, setOffset] = useState(0);
+  const past = offset < 0;
   useEffect(() => setOffset(0), [today]);
   // The distance under the wheel while it's turning, in the runner's unit.
   const [preview, setPreview] = useState<number | null>(null);
@@ -272,13 +281,17 @@ function DayTargetsCard({
   const header = (
     <View style={styles.dayNav}>
       <Pressable
-        onPress={() => setOffset((o) => Math.max(o - 1, 0))}
-        disabled={offset === 0}
+        onPress={() => setOffset((o) => Math.max(o - 1, -MAX_DAYS_BACK))}
+        disabled={offset === -MAX_DAYS_BACK}
         hitSlop={12}
         accessibilityRole="button"
         accessibilityLabel="Previous day"
       >
-        <Ionicons name="chevron-back" size={18} color={offset === 0 ? c.faint : c.text} />
+        <Ionicons
+          name="chevron-back"
+          size={18}
+          color={offset === -MAX_DAYS_BACK ? c.faint : c.text}
+        />
       </Pressable>
       <Text style={[styles.eyebrow, { color: c.muted }]}>{dayHeading(day, offset)}</Text>
       <Pressable
@@ -304,7 +317,9 @@ function DayTargetsCard({
         <Text style={[styles.empty, { color: c.faint }]}>
           {plan
             ? 'Finish that week’s training entry below to see these targets.'
-            : 'Enter this week’s training below to see targets.'}
+            : past
+              ? 'No training was entered for that week yet.'
+              : 'Enter this week’s training below to see targets.'}
         </Text>
       </View>
     );
@@ -322,8 +337,12 @@ function DayTargetsCard({
   const t = dayTargets(profile, { type: plan.type, km }, logged?.ea ?? null);
 
   const distanceNote = plan.set
-    ? 'Distance you set for this day. The rest of the week’s running days split what’s left.'
-    : plan.type === 'long'
+    ? past
+      ? 'The distance you ran this day, as you set it.'
+      : 'Distance you set for this day. The rest of the week’s running days split what’s left.'
+    : past
+      ? 'The plan’s distance for this day. Scroll to what you actually ran — it makes your recent energy availability more accurate.'
+      : plan.type === 'long'
       ? 'Your long run, from this week’s plan.'
       : plan.type === 'rest'
         ? 'Rest day. Scroll if you run anyway.'
@@ -481,9 +500,13 @@ function LastWeek({
             </Text>
           </View>
           <Text style={[styles.why, { color: c.muted }]}>
-            What you logged over {logged.days} days, minus the running you entered, per kg of
+            What you logged over {logged.days} days, minus each day&apos;s running, per kg of
             fat-free mass. {RULES.ea.adequate}+ is adequate; under {RULES.ea.low} is linked to
             low energy availability.
+          </Text>
+          <Text style={[styles.why, { color: c.faint }]}>
+            Each day counts its planned distance unless you set what you actually ran — step
+            back with the arrow on the card above to fix any of the last {MAX_DAYS_BACK} days.
           </Text>
           <Text style={[styles.why, { color: c.faint }]}>
             Only as accurate as what you logged. Today isn&apos;t counted until it&apos;s over.

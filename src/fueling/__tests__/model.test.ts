@@ -238,6 +238,17 @@ describe('loggedEnergyAvailability', () => {
     expect(loggedEnergyAvailability(female, log, weeks, today)).toBeNull();
   });
 
+  it('uses the distance actually run on a past day, when one was set', () => {
+    const log: Log = { '2026-09-19': eat2000, '2026-09-21': eat2000, '2026-09-23': eat2000 };
+    // The 21st was a skipped run, not the planned 10 km: that day's running
+    // drops to nothing, and only that day's — the other past days keep their
+    // planned share. (1,550 + 2,000 + 1,550) / 3 / 42 kg fat-free mass.
+    expect(loggedEnergyAvailability(female, log, weeks, today, { '2026-09-21': 0 })).toEqual({
+      ea: 40.5,
+      days: 3,
+    });
+  });
+
   it('skips days no training week covers', () => {
     const log: Log = { '2026-09-19': eat2000, '2026-09-21': eat2000, '2026-09-23': eat2000 };
     expect(loggedEnergyAvailability(female, log, { '2026-09-20': week }, today)).toBeNull();

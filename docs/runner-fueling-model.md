@@ -127,6 +127,12 @@ day is open. Set distances belong to their dates, so a week carried forward
 from an earlier one doesn't bring that week's set days with it. Energy
 availability from the log uses the same per-day distances.
 
+The card's arrows go back 7 days as well as forward 6: exactly the days the
+logged energy availability reads, so each one's real distance can be set and
+that number stops relying on the plan's even share. A skipped run left at its
+planned distance makes energy availability read low, by about one day's running
+spread over the week.
+
 **Body fat default when blank:** 10% male, 16% female — typical for trained
 distance runners, and deliberately on the lean side: a lower body-fat guess means a *higher* fat-free mass, which makes
 calculated energy availability *lower*, so a bad guess errs toward warning
