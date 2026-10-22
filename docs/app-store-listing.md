@@ -52,7 +52,7 @@ YOUR HISTORY AT A GLANCE
 A calendar shows every day's macros and calories, with your monthly average. Missed a day or got one wrong? Fill it in or fix it later.
 
 RUNNER FUELING
-Training for a race? Get daily calorie and macro targets that move with your mileage — more carbs on long-run and workout days — built on published sports-nutrition research. Scroll to the miles you're actually running today and the numbers follow. It won't set a calorie deficit when there are warning signs of under-fuelling.
+Training for a race? Get daily calorie and macro targets that move with your mileage — more carbs on long-run and workout days — built on published sports-nutrition research. Connect Apple Health and each day fills in with how far you actually ran, from Apple Watch or any app that saves runs to Health; or scroll to the miles yourself. It won't set a calorie deficit when there are warning signs of under-fuelling.
 
 PRIVATE BY DESIGN
 No account. No ads. No tracking. No subscription. The app has no server to send anything to: your log never leaves your phone, and its App Store privacy label reads "Data Not Collected."
