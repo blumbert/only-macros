@@ -28,7 +28,7 @@ Track macros in seconds
 
 ## Promotional text (170 max — can be changed any time, without review)
 
-New: snap a nutrition label and your macros are logged, servings and all. Save the foods you eat every week and add them in two taps. Still no ads and no account.
+New: your runs from Apple Health fill in each day's mileage. Snap a nutrition label and your macros are logged, servings and all. Still no ads and no account.
 
 ## Keywords (100 max — comma-separated, no spaces; words in the name and subtitle are already indexed, so they're not repeated here)
 
