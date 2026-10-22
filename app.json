@@ -46,7 +46,7 @@
         "@kingstinct/react-native-healthkit",
         {
           "NSHealthShareUsageDescription": "Macros reads your running workouts from Apple Health to fill in how far you ran each day, which sets your calorie targets. It's read on your phone and never sent anywhere.",
-          "NSHealthUpdateUsageDescription": false,
+          "NSHealthUpdateUsageDescription": "Macros never saves anything to Apple Health. It only reads your running workouts to fill in how far you ran each day.",
           "background": false
         }
       ]
