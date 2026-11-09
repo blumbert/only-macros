@@ -8,5 +8,5 @@ export const TERMS_URL = 'https://www.apple.com/legal/internet-services/itunes/d
 
 export const MANAGE_SUBSCRIPTIONS_URL = 'https://apps.apple.com/account/subscriptions';
 
-/** The AI search Worker. Filled in once it's deployed. */
-export const AI_SEARCH_URL = '';
+/** The AI search Worker (server/ai-search, deployed to Cloudflare). */
+export const AI_SEARCH_URL = 'https://only-macros-ai-search.williamjaylumbert.workers.dev/search';
