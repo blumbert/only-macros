@@ -1,5 +1,10 @@
 import { Platform } from 'react-native';
-import Purchases, { LOG_LEVEL, type CustomerInfo, type PurchasesPackage } from 'react-native-purchases';
+import Purchases, {
+  LOG_LEVEL,
+  PACKAGE_TYPE,
+  type CustomerInfo,
+  type PurchasesPackage,
+} from 'react-native-purchases';
 
 // A thin layer over RevenueCat so no screen imports the SDK and none of them
 // has to know how entitlement works. Adapted from Weedhead Warriors'
@@ -7,9 +12,9 @@ import Purchases, { LOG_LEVEL, type CustomerInfo, type PurchasesPackage } from '
 //
 // The iOS PUBLIC key from RevenueCat (Project settings -> API keys, starts
 // with `appl_`). Never the secret key: anything compiled into the app can be
-// read out of it. Until it's filled in, everything here reports "unavailable"
+// read out of it. With it empty, everything here reports "unavailable"
 // instead of throwing.
-const PURCHASES_IOS_KEY = '';
+const PURCHASES_IOS_KEY = 'appl_tYxLskWVDutTGfLGUgvPDzxZCTE';
 
 /** The entitlement Premium products grant, named identically in RevenueCat. */
 export const PREMIUM_ENTITLEMENT = 'premium';
@@ -19,7 +24,7 @@ export type Plan = {
   title: string;
   priceString: string;
   period: string | null;
-  /** The plan to preselect: the offering's last, conventionally the yearly one. */
+  /** The plan to preselect: the yearly one. */
   recommended: boolean;
 };
 
@@ -95,9 +100,19 @@ const toPlan = (p: PurchasesPackage, recommended: boolean): Plan => ({
   recommended,
 });
 
+const RANK: Partial<Record<PACKAGE_TYPE, number>> = {
+  [PACKAGE_TYPE.WEEKLY]: 0,
+  [PACKAGE_TYPE.MONTHLY]: 1,
+  [PACKAGE_TYPE.TWO_MONTH]: 2,
+  [PACKAGE_TYPE.THREE_MONTH]: 3,
+  [PACKAGE_TYPE.SIX_MONTH]: 4,
+  [PACKAGE_TYPE.ANNUAL]: 5,
+  [PACKAGE_TYPE.LIFETIME]: 6,
+};
+const rank = (p: PurchasesPackage) => RANK[p.packageType] ?? 9;
+
 /**
- * Every plan in the current offering, cheapest first as the dashboard orders
- * them. An empty list has several different causes, so the reason comes back
+ * Every plan in the current offering, shortest billing period first. An empty list has several different causes, so the reason comes back
  * too rather than a bare [].
  */
 export async function getPlans(): Promise<{ plans: Plan[]; error?: string }> {
@@ -113,7 +128,15 @@ export async function getPlans(): Promise<{ plans: Plan[]; error?: string }> {
         error: `Offering "${current.identifier}" has no products the App Store will sell yet.`,
       };
     }
-    return { plans: pkgs.map((p, i) => toPlan(p, i === pkgs.length - 1)) };
+    // Monthly first, yearly last and preselected, whatever order the
+    // dashboard lists them in.
+    const sorted = [...pkgs].sort((a, b) => rank(a) - rank(b));
+    const hasAnnual = sorted.some((p) => p.packageType === PACKAGE_TYPE.ANNUAL);
+    return {
+      plans: sorted.map((p, i) =>
+        toPlan(p, hasAnnual ? p.packageType === PACKAGE_TYPE.ANNUAL : i === sorted.length - 1),
+      ),
+    };
   } catch (e: any) {
     return { plans: [], error: e?.message ?? 'Couldn’t load plans from the App Store.' };
   }
