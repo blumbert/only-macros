@@ -42,3 +42,6 @@ yarn-error.*
 
 # Store screenshots are generated, large, and not part of the app.
 /store-screenshots/
+
+# The AI search Worker deploys separately to Cloudflare.
+/server/

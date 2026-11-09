@@ -8,6 +8,8 @@ export type MenuItem = {
   key: string;
   label: string;
   icon: React.ComponentProps<typeof Ionicons>['name'];
+  /** A small tag at the end of the row, e.g. "Premium" on a locked page. */
+  badge?: string;
   onPress: () => void;
 };
 
@@ -85,6 +87,11 @@ export function AppMenu({
           >
             <Ionicons name={item.icon} size={20} color={c.text} />
             <Text style={[styles.label, { color: c.text }]}>{item.label}</Text>
+            {item.badge ? (
+              <Text style={[styles.badge, { color: c.muted, borderColor: c.border }]}>
+                {item.badge}
+              </Text>
+            ) : null}
           </Pressable>
         ))}
         </View>
@@ -116,4 +123,14 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
   },
   label: { fontSize: 16, fontWeight: '600' },
+  badge: {
+    marginLeft: 'auto',
+    fontSize: 11,
+    fontWeight: '700',
+    borderWidth: StyleSheet.hairlineWidth * 2,
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    overflow: 'hidden',
+  },
 });

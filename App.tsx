@@ -20,12 +20,14 @@ import {
   useSafeAreaInsets,
 } from 'react-native-safe-area-context';
 
+import { AiSearchSheet } from './src/components/AiSearchSheet';
 import { AppMenu, type Anchor, type MenuItem } from './src/components/AppMenu';
 import { CalendarSheet } from './src/components/CalendarSheet';
 import { FoodPickerSheet, SavedFoodBar } from './src/components/FoodPicker';
 import { FoodsSheet } from './src/components/FoodsSheet';
 import { LabelSheet } from './src/components/LabelSheet';
 import { MacroField } from './src/components/MacroField';
+import { PaywallSheet } from './src/components/PaywallSheet';
 import { RecentEntries } from './src/components/RecentEntries';
 import { RunnerSheet } from './src/components/RunnerSheet';
 import { TotalsPanel } from './src/components/TotalsPanel';
@@ -34,6 +36,7 @@ import { servingsName, useFoods, type Food } from './src/foods';
 import { buzzLight, buzzSuccess } from './src/haptics';
 import { parseMacroInput, sanitizeMacroInput } from './src/macroInput';
 import { scale } from './src/nutrition/parseLabel';
+import { usePremium } from './src/premium/usePremium';
 import { sumDay } from './src/storage';
 import { formatGrams, MACROS, useTheme, type MacroKey } from './src/theme';
 import { useLog } from './src/useLog';
@@ -44,7 +47,7 @@ const EMPTY_DRAFT: Draft = { c: '', p: '', f: '' };
 const sanitize = sanitizeMacroInput;
 const parse = parseMacroInput;
 
-type Page = 'calendar' | 'runner' | 'label' | 'foods';
+type Page = 'calendar' | 'runner' | 'label' | 'foods' | 'search' | 'premium';
 
 /** The grams for `servings` of a saved food, as the fields show them. */
 const draftFor = (food: Food, servings: number): Draft => {
@@ -68,6 +71,7 @@ function Screen() {
   const insets = useSafeAreaInsets();
   const { log, today, add, addOn, setDayTotals, remove, update } = useLog();
   const foods = useFoods();
+  const premium = usePremium();
 
   const [draft, setDraft] = useState<Draft>(EMPTY_DRAFT);
   const [page, setPage] = useState<Page | null>(null);
@@ -141,11 +145,34 @@ function Screen() {
     );
   };
 
+  // Premium pages open the paywall instead until they're unlocked. Runner
+  // fueling stays open to everyone who had it before Premium.
+  const searchUnlocked = premium.premium;
+  const runnerUnlocked = premium.premium || premium.grandfathered;
   const menuItems: MenuItem[] = [
     { key: 'calendar', label: 'Calendar', icon: 'calendar-outline', onPress: () => setPage('calendar') },
     { key: 'label', label: 'Scan a label', icon: 'scan-outline', onPress: () => setPage('label') },
+    {
+      key: 'search',
+      label: 'Search with AI',
+      icon: 'sparkles-outline',
+      badge: searchUnlocked ? undefined : 'Premium',
+      onPress: () => setPage(searchUnlocked ? 'search' : 'premium'),
+    },
     { key: 'foods', label: 'Saved foods', icon: 'bookmark-outline', onPress: () => setPage('foods') },
-    { key: 'runner', label: 'Runner fueling', icon: 'footsteps-outline', onPress: () => setPage('runner') },
+    {
+      key: 'runner',
+      label: 'Runner fueling',
+      icon: 'footsteps-outline',
+      badge: runnerUnlocked ? undefined : 'Premium',
+      onPress: () => setPage(runnerUnlocked ? 'runner' : 'premium'),
+    },
+    {
+      key: 'premium',
+      label: premium.premium ? 'Premium' : 'Get Premium',
+      icon: premium.premium ? 'star' : 'star-outline',
+      onPress: () => setPage('premium'),
+    },
   ];
   const closePage = () => setPage(null);
 
@@ -315,6 +342,23 @@ function Screen() {
       />
 
       <FoodsSheet visible={page === 'foods'} onClose={closePage} foods={foods} />
+
+      <AiSearchSheet
+        visible={page === 'search'}
+        onClose={closePage}
+        today={today}
+        onAdd={addOn}
+        foods={foods}
+        onNeedPremium={premium.refresh}
+      />
+
+      <PaywallSheet
+        visible={page === 'premium'}
+        onClose={closePage}
+        premium={premium.premium}
+        managementUrl={premium.managementUrl}
+        onChanged={premium.refresh}
+      />
 
       <FoodPickerSheet
         visible={pickerOpen}
