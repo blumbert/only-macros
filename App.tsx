@@ -329,6 +329,7 @@ function Screen() {
         onAdd={addOn}
         onDelete={remove}
         onSetTotals={setDayTotals}
+        foods={foods}
       />
 
       <RunnerSheet visible={page === 'runner'} onClose={closePage} log={log} today={today} />

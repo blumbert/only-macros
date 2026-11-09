@@ -38,6 +38,8 @@ Premium is $3.99 a month or $29.99 a year and also includes Runner fueling.
 If you already used Runner fueling, it stays free for you. Logging, label
 scanning, saved foods and the calendar are free as always.
 
+Also new: add a saved food to any earlier day from the calendar.
+
 ---
 
 ## 1.0.6

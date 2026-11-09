@@ -4,18 +4,24 @@ import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { confirmDestructive } from '../confirm';
 import { formatTime, longDate, type DayKey } from '../date';
+import { servingsName, type Food } from '../foods';
 import { parseMacroInput, sanitizeMacroInput } from '../macroInput';
+import { scale } from '../nutrition/parseLabel';
 import { calories, sumDay, type Entry, type Totals } from '../storage';
 import { formatGrams, formatNumber, MACROS, useTheme, type MacroKey } from '../theme';
+import { FoodPickerSheet, SavedFoodBar } from './FoodPicker';
 
 type Props = {
   day: DayKey;
   entries: Entry[];
   /** Future days can be looked at, but not logged against. */
   editable: boolean;
-  onAdd: (values: Totals) => void;
+  onAdd: (values: Totals, name?: string) => void;
   onDelete: (id: string) => void;
   onSetTotals: (values: Totals) => void;
+  /** Saved foods, to add one to this day. */
+  foods: Food[];
+  onFoodUsed: (id: string) => void;
 };
 
 type Draft = Record<MacroKey, string>;
@@ -36,11 +42,27 @@ const readDraft = (d: Draft): Totals => ({
 
 const describe = (t: Totals) => `${formatGrams(t.c)}C ${formatGrams(t.p)}P ${formatGrams(t.f)}F`;
 
-export function DayCard({ day, entries, editable, onAdd, onDelete, onSetTotals }: Props) {
+/** The grams for `servings` of a saved food, as the fields show them. */
+const draftFor = (food: Food, servings: number): Draft => toDraft(scale(food, servings));
+
+export function DayCard({
+  day,
+  entries,
+  editable,
+  onAdd,
+  onDelete,
+  onSetTotals,
+  foods,
+  onFoodUsed,
+}: Props) {
   const { c } = useTheme();
   const [editing, setEditing] = useState(false);
   const [totalDraft, setTotalDraft] = useState<Draft>(EMPTY_DRAFT);
   const [addDraft, setAddDraft] = useState<Draft>(EMPTY_DRAFT);
+  // A saved food chosen for the add row, as on the main screen: the fields
+  // hold the grams for `servings` of it, and typing in them drops the food.
+  const [picked, setPicked] = useState<{ food: Food; servings: string } | null>(null);
+  const [pickerOpen, setPickerOpen] = useState(false);
 
   const totals = sumDay(entries);
   const kcal = calories(totals);
@@ -51,20 +73,42 @@ export function DayCard({ day, entries, editable, onAdd, onDelete, onSetTotals }
   useEffect(() => {
     setEditing(false);
     setAddDraft(EMPTY_DRAFT);
+    setPicked(null);
   }, [day]);
 
   const openEditor = () => {
     setTotalDraft(toDraft(totals));
     setAddDraft(EMPTY_DRAFT);
+    setPicked(null);
     setEditing(true);
   };
 
   const sorted = [...entries].sort((a, b) => b.at - a.at);
 
+  const pickFood = (food: Food) => {
+    setPickerOpen(false);
+    setPicked({ food, servings: '1' });
+    setAddDraft(draftFor(food, 1));
+  };
+
+  const changeServings = (servings: string) => {
+    if (!picked) return;
+    setPicked({ ...picked, servings });
+    const n = parseMacroInput(servings);
+    // Mid-typing ("" or "0.") there's no amount yet; keep the last one showing.
+    if (n > 0) setAddDraft(draftFor(picked.food, n));
+  };
+
   const handleAdd = () => {
     const values = readDraft(addDraft);
     if (values.c + values.p + values.f <= 0) return;
-    onAdd(values);
+    if (picked) {
+      onAdd(values, servingsName(picked.food.name, parseMacroInput(picked.servings)));
+      onFoodUsed(picked.food.id);
+      setPicked(null);
+    } else {
+      onAdd(values);
+    }
     setAddDraft(EMPTY_DRAFT);
     // The total field is a draft, so it doesn't follow the log on its own.
     setTotalDraft(
@@ -166,7 +210,11 @@ export function DayCard({ day, entries, editable, onAdd, onDelete, onSetTotals }
           </Text>
           <MacroRow
             draft={addDraft}
-            onChange={setAddDraft}
+            onChange={(next) => {
+              setAddDraft(next);
+              // Typed by hand, it's no longer that food's numbers.
+              if (picked) setPicked(null);
+            }}
             labelPrefix="Add"
             action={
               <IconAction
@@ -177,6 +225,24 @@ export function DayCard({ day, entries, editable, onAdd, onDelete, onSetTotals }
                 onPress={handleAdd}
               />
             }
+          />
+          <View style={styles.savedFood}>
+            <SavedFoodBar
+              picked={picked?.food ?? null}
+              servings={picked?.servings ?? '1'}
+              onOpen={() => setPickerOpen(true)}
+              onServingsChange={changeServings}
+              onClear={() => {
+                setPicked(null);
+                setAddDraft(EMPTY_DRAFT);
+              }}
+            />
+          </View>
+          <FoodPickerSheet
+            visible={pickerOpen}
+            onClose={() => setPickerOpen(false)}
+            foods={foods}
+            onPick={pickFood}
           />
 
           <View style={[styles.divider, { backgroundColor: c.border }]} />
@@ -368,6 +434,7 @@ const styles = StyleSheet.create({
     padding: 0,
   },
   hint: { marginTop: 8, fontSize: 11, fontWeight: '500' },
+  savedFood: { marginTop: 8 },
   iconButton: { padding: 4 },
   entryRow: {
     flexDirection: 'row',

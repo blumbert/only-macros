@@ -21,6 +21,7 @@ import {
   WEEKDAY_INITIALS,
   type DayKey,
 } from '../date';
+import type { FoodsStore } from '../foods';
 import { calories, sumDay, type Log, type Totals } from '../storage';
 import { formatNumber, useTheme } from '../theme';
 import { DayCard } from './DayCard';
@@ -30,9 +31,10 @@ type Props = {
   onClose: () => void;
   log: Log;
   today: DayKey;
-  onAdd: (day: DayKey, values: Totals) => void;
+  onAdd: (day: DayKey, values: Totals, name?: string) => void;
   onDelete: (day: DayKey, id: string) => void;
   onSetTotals: (day: DayKey, values: Totals) => void;
+  foods: FoodsStore;
 };
 
 type DayStat = { totals: Totals; kcal: number };
@@ -45,6 +47,7 @@ export function CalendarSheet({
   onAdd,
   onDelete,
   onSetTotals,
+  foods,
 }: Props) {
   const { c, isDark } = useTheme();
   const insets = useSafeAreaInsets();
@@ -228,9 +231,11 @@ export function CalendarSheet({
             day={selected}
             entries={log[selected] ?? []}
             editable={selected <= today}
-            onAdd={(values) => onAdd(selected, values)}
+            onAdd={(values, name) => onAdd(selected, values, name)}
             onDelete={(id) => onDelete(selected, id)}
             onSetTotals={(values) => onSetTotals(selected, values)}
+            foods={foods.foods}
+            onFoodUsed={foods.markUsed}
           />
 
           <Text style={[styles.summary, { color: c.faint }]}>
