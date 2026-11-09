@@ -13,31 +13,31 @@ DEVICES TESTED
 Physical iPhone 14 running iOS 18.7.8, installed via TestFlight.
 
 WHAT THE APP DOES
-Only Macros is a manual macro logger for people who already know their numbers. The main screen has three fields (grams of carbohydrate, protein and fat), an "Add to today" button, and the day's totals and calories (carbs x 4 + protein x 4 + fat x 9). Everything else is in the menu (top-right button): Calendar, Scan a label, Saved foods and Runner fueling.
+A manual macro logger: three fields (carbs, protein, fat in grams), "Add to today", and the day's totals and calories. The menu (top right) has Calendar, Scan a label, Search with AI, Saved foods, Runner fueling and Premium.
 
-Scan a label reads the carbohydrate, protein and fat off a photo of a nutrition facts label using Apple's on-device Vision text recognition, multiplies them by the number of servings, and adds them to today or an earlier day. The photo is never uploaded or kept. Saved foods holds foods with their macros per serving, which can be picked under the main screen's fields.
+Scan a label reads a nutrition facts photo with Apple's on-device Vision text recognition; the photo is never uploaded or kept. HealthKit (optional, Runner fueling): read access to workouts only, using the date and distance of runs from the last 7 days to set each day's mileage. Nothing is written to Health and Health data never leaves the device.
 
-HealthKit (optional, Runner fueling page): the app requests read access to workouts only, and uses the date and distance of running workouts from the last 7 days to set each day's mileage, which sets that day's calorie target and the 7-day energy availability. It writes nothing to Health, reads no other data types, and the data never leaves the device.
+PREMIUM (NEW IN 1.0.7)
+An auto-renewable subscription group: com.lumbert.macros.premium.monthly ($3.99) and com.lumbert.macros.premium.yearly ($29.99). It unlocks Search with AI and Runner fueling, tagged "Premium" in the menu; everything else stays free. People who used Runner fueling before 1.0.7 keep it free, so on a fresh install it opens the paywall. The paywall shows each plan's length and App Store price, the renewal terms, Terms of Use and Privacy Policy links, and Restore purchases.
+
+Search with AI sends only the typed description to our server, which checks the subscription and asks Anthropic's Claude (with web search) for the nutrition per serving and the number of servings. The result fills the same editable form as a scanned label, with its sources and a note that it is an estimate. 60 searches a month per subscriber.
 
 HOW TO TEST
-No account, login, purchase or setup; everything works offline.
+No account or login. Use a Sandbox Apple Account for Premium.
 1. Type numbers into C, P and F and tap "Add to today".
-2. Menu > Scan a label: take or choose a photo of any nutrition facts label. The numbers appear in editable fields; set 2 servings, switch on "Save to my foods", name it, and tap "Add to today". The arrows at the top move the day back.
-3. On the main screen, tap "Saved food" under the fields and pick that food; the fields fill in, and the servings buttons change them.
-4. Menu > Calendar, then any day, then its pencil to edit it.
-5. Menu > Runner fueling. Fill in the profile with any values and choose "Lose" as the goal, then enter a weekly mileage: today's targets appear. Scroll the distance beside the calories and the targets follow it; the arrows step back 7 days and ahead 6. To see a safety guardrail, edit the profile and choose "One in the hip (femoral neck), pelvis or sacrum" under bone stress injuries: the targets return to maintenance and the page explains why.
-6. On the same page, tap "Connect Apple Health" and allow Workouts. Running workouts in Health from the last 7 days fill in those days' distances. With no runs in Health, the card says it can't see any and the plan's distances stay; that is expected.
+2. Menu > Scan a label: photograph any nutrition label, set 2 servings, switch on "Save to my foods", name it, tap "Add to today".
+3. Main screen: tap "Saved food" under the fields and pick it.
+4. Menu > Calendar, any day, then its pencil to edit it.
+5. Menu > Premium: subscribe to either plan. The Premium tags disappear.
+6. Menu > Search with AI: type "half a quart of Ben & Jerry's Cookie Dough ice cream" and tap the sparkles button. After 20 to 40 seconds the macros, servings and sources appear; tap "Add to today".
+7. Menu > Runner fueling: fill in the profile, choose "Lose" as the goal and enter a weekly mileage. Scroll the distance beside the calories and the targets follow it. For a guardrail, choose "One in the hip (femoral neck), pelvis or sacrum" under bone stress injuries: targets return to maintenance and the page explains why.
+8. Same page: "Connect Apple Health", allow Workouts. Runs from the last 7 days fill in those days. With no runs in Health the card says so; that is expected.
 
 DATA AND NETWORK
-The app makes no network requests and contains no analytics, advertising or crash-reporting SDKs. Food entries, the runner profile and distances read from Health are stored only on the device and are deleted with the app. App Privacy is declared as "Data Not Collected".
+No analytics, advertising or crash-reporting SDKs, and no tracking. The log, runner profile, photos and Health distances stay on the device. Network use is only RevenueCat (subscription status under an anonymous ID; there are no accounts) and Search with AI (the typed text, to our server and Anthropic). App Privacy declares Purchase History and Other User Content, not linked to the user and not used for tracking.
 
 HEALTH AND FITNESS
-The app is not a medical device and does not diagnose or treat any condition. The runner page states that its figures are estimates from published research, not medical advice, and lists its sources in the app, including the ACSM/AND/DC position statement on nutrition and athletic performance (2016) and the IOC REDs consensus statement (2023).
-
-The page is designed to prevent under-fuelling, a recognised risk among runners, rather than to promote weight loss:
-- A weight-loss goal is capped at a 300 kcal/day deficit, applied only on rest and easy days. Workout and long-run days are always at maintenance.
-- No deficit is set for users under 18, for users reporting a bone stress injury history or missed periods that the IOC tool treats as a primary warning sign, or when the user's own logged food shows low energy availability. The page explains why and points the user to a doctor, never to eating less.
-- No body-weight or body-size targets, weight-loss promises or body-image content.
-- The injury and menstrual questions stay on the device, and the menstrual question is optional.
-
-The app contains no food database and no third-party content. Its artwork is original.
+Not a medical device. The runner page says its figures are estimates from published research, not medical advice, and lists its sources, including the ACSM/AND/DC position statement on nutrition and athletic performance (2016) and the IOC REDs consensus statement (2023). It is built to prevent under-fuelling, not to promote weight loss:
+- A weight-loss goal is capped at a 300 kcal/day deficit on rest and easy days only; workout and long-run days stay at maintenance.
+- No deficit for users under 18, with a bone stress injury history or missed periods the IOC tool treats as a primary warning sign, or when their logged food shows low energy availability. The page points them to a doctor, never to eating less.
+- No body-weight targets, weight-loss promises or body-image content. The menstrual question is optional.

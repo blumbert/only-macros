@@ -68,8 +68,8 @@ be on any SDK.
 **Label scanning needs a real build.** `modules/label-text` is native code, so
 Expo Go and the web don't have it: there the Scan a label page says so and
 takes the numbers typed in instead. It reads text with Apple's Vision framework
-rather than a third-party OCR library so that nothing leaves the phone and App
-Privacy stays at "Data Not Collected". It passes the photo's orientation on to
+rather than a third-party OCR library so that the photo never leaves the
+phone. It passes the photo's orientation on to
 Vision — camera photos are stored sideways with an orientation flag, and
 without it Vision reads the label rotated.
 
@@ -106,8 +106,10 @@ Review**:
 - **Name**: Only Macros. **Category**: Health & Fitness.
 - **Screenshots**: one 6.9" iPhone set is the minimum. Take them on a real
   device, or in the iOS simulator if you ever get Mac access.
-- **App Privacy**: "Data Not Collected". The app has no network code at all —
-  everything lives in `AsyncStorage` on the device.
+- **App Privacy** (since 1.0.7): Purchase History (RevenueCat; Analytics and
+  App Functionality) and Other User Content (the text typed into AI search;
+  App Functionality), neither linked to the user nor used for tracking. The
+  log itself lives in `AsyncStorage` on the device and is never sent anywhere.
 - **Support URL** is required. A GitHub repo page or a one-page site is fine.
 - **Sign-in**: say the app does not require one, and leave demo credentials blank.
 

@@ -2,7 +2,10 @@
 
 The product page text. Each section below goes into the App Store Connect field
 of the same name. The limits are Apple's; recount after any edit (as written:
-subtitle 23, promotional text 162, keywords 100, description 1,638).
+subtitle 23, promotional text 143, keywords 100, description 2,773).
+
+Premium is an auto-renewable subscription, so Guideline 3.1.2 requires the
+description to keep its Terms of Use and Privacy Policy links (the last lines).
 
 Subtitle, keywords and description only change with a new version; promotional
 text can be changed any time. The subtitle lives under App Information, not on
@@ -28,7 +31,7 @@ Track macros in seconds
 
 ## Promotional text (170 max — can be changed any time, without review)
 
-New: your runs from Apple Health fill in each day's mileage. Snap a nutrition label and your macros are logged, servings and all. Still no ads and no account.
+New: describe what you ate and AI finds the macros, from the real label when it can. Snap a label, log in seconds, still no ads and no account.
 
 ## Keywords (100 max — comma-separated, no spaces; words in the name and subtitle are already indexed, so they're not repeated here)
 
@@ -54,11 +57,20 @@ A calendar shows every day's macros and calories, with your monthly average. Mis
 RUNNER FUELING
 Training for a race? Get daily calorie and macro targets that move with your mileage — more carbs on long-run and workout days — built on published sports-nutrition research. Connect Apple Health and each day fills in with how far you actually ran, from Apple Watch or any app that saves runs to Health; or scroll to the miles yourself. It won't set a calorie deficit when there are warning signs of under-fuelling.
 
+PREMIUM: SEARCH WITH AI
+No label handy? Describe what you ate in your own words — "half a quart of cookie dough ice cream from the farm stand" — and AI looks up the product's nutrition label, or estimates from similar products when it can't find one, and works out the servings for you. Every estimate lands in the same editable form as a scanned label, with where it came from, so you can check it before you add it.
+
+Premium is an optional subscription that unlocks AI food search (60 searches a month) and Runner fueling. Logging, label scanning, saved foods and the calendar are free, with no ads. If you used Runner fueling before Premium, it stays free for you.
+
 PRIVATE BY DESIGN
-No account. No ads. No tracking. No subscription. The app has no server to send anything to: your log never leaves your phone, and its App Store privacy label reads "Data Not Collected."
+No account. No ads. No tracking. Your log, your runner profile and your label photos never leave your phone. AI search sends only the words you type, to look up the food.
 
 Built for people who already know their numbers — lifters, runners, flexible dieters, and anyone following macros from a coach.
 
-## What's New in This Version (1.0.5)
+Premium is $3.99 a month or $29.99 a year in the US, billed to your Apple account. It renews automatically unless cancelled at least 24 hours before the end of the current period; manage or cancel it in your App Store account settings.
+Terms of Use: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
+Privacy Policy: https://github.com/blumbert/only-macros/blob/main/PRIVACY.md
+
+## What's New in This Version (1.0.7)
 
 See `release-notes.md`.

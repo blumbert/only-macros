@@ -10,10 +10,12 @@ what someone would notice.
 ## How to ship
 
 Every change goes out as an App Store release. The app has no update
-mechanism of its own — it makes no network requests at all, which is what
-keeps App Privacy at "Data Not Collected". (Over-the-air updates were tried
-for 1.0.3 and taken back out for exactly that reason: `expo-updates` requires
-declaring Crash Data.)
+mechanism of its own. (Over-the-air updates were tried for 1.0.3 and taken
+back out: `expo-updates` requires declaring Crash Data, and the only network
+use is meant to stay RevenueCat and AI search.)
+
+The AI search server (`server/ai-search`) deploys separately with
+`npx wrangler deploy` from that folder, and needs no app release.
 
 1. Bump `version` in app.json. A version that's already live on the store is
    rejected on upload (ITMS-90062).
@@ -21,6 +23,20 @@ declaring Crash Data.)
    — builds, then uploads to App Store Connect. The build lands in TestFlight.
 3. In App Store Connect: new version, select the build, paste What's New from
    below, update the review notes if the app changed, submit for review.
+
+---
+
+## 1.0.7
+
+New: Only Macros Premium. Describe what you ate in your own words — "half a
+quart of cookie dough ice cream from the farm stand" — and Search with AI
+finds the product's nutrition label, or estimates from similar foods, and
+works out the servings. The answer fills an editable form so you can check it
+before adding it.
+
+Premium is $3.99 a month or $29.99 a year and also includes Runner fueling.
+If you already used Runner fueling, it stays free for you. Logging, label
+scanning, saved foods and the calendar are free as always.
 
 ---
 
