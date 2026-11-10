@@ -118,6 +118,7 @@ days already past = the plan's even share, unless set
 long run day     = the entered long run distance, unless set
 open days        = easy and workout days from today on that aren't set
 each open day    = (weekly km − everything above) ÷ open days, never below 0
+any day at 0 km  = a rest day, whatever the plan called it
 ```
 
 So the default for today is what's left of the week over the running days left:

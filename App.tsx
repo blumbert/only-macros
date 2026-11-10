@@ -226,6 +226,24 @@ function Screen() {
               <Text style={[styles.title, { color: c.text }]}>Macros</Text>
               <Text style={[styles.subtitle, { color: c.muted }]}>{longDate(today)}</Text>
             </View>
+            {/* Runner fueling also gets its own button, so going back and
+                forth from the main screen is one tap instead of two. */}
+            <Pressable
+              onPress={() => {
+                Keyboard.dismiss();
+                setPage(runnerUnlocked ? 'runner' : 'premium');
+              }}
+              hitSlop={10}
+              accessibilityRole="button"
+              accessibilityLabel="Runner fueling"
+              style={({ pressed }) => [
+                styles.menuButton,
+                styles.runnerButton,
+                { backgroundColor: c.surface, borderColor: c.border, opacity: pressed ? 0.6 : 1 },
+              ]}
+            >
+              <Ionicons name="footsteps-outline" size={20} color={c.text} />
+            </Pressable>
             <Pressable
               ref={menuButton}
               onPress={openMenu}
@@ -385,7 +403,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
     paddingBottom: 18,
   },
-  headerText: { flexShrink: 1 },
+  headerText: { flexShrink: 1, marginRight: 'auto' },
+  runnerButton: { marginRight: 10 },
   title: { fontSize: 30, fontWeight: '800', letterSpacing: -0.6 },
   subtitle: { fontSize: 14, fontWeight: '600', marginTop: 2 },
   menuButton: {

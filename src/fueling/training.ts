@@ -141,9 +141,13 @@ export function planFor(
         ? 0
         : fromDayKey(today).getDay();
   const index = fromDayKey(day).getDay();
+  const km = dailyKm(found.week, set, firstOpen)[index];
   return {
-    type: found.week.days[index],
-    km: dailyKm(found.week, set, firstOpen)[index],
+    // A day with no running is a rest day whatever the plan called it: a long
+    // run set to 0 would otherwise keep its 8 g/kg of carbs with nothing to
+    // pay for them, and squeeze fat out of the day entirely.
+    type: km > 0 ? found.week.days[index] : 'rest',
+    km,
     set: set[index] !== undefined,
   };
 }

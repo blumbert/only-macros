@@ -214,6 +214,15 @@ describe('planFor', () => {
     });
   });
 
+  it('treats a running day set to 0 as a rest day', () => {
+    // Sunday 9/20 is the long run.
+    expect(planFor(weeks, '2026-09-20', { '2026-09-20': 0 })).toEqual({
+      type: 'rest',
+      km: 0,
+      set: true,
+    });
+  });
+
   it('defaults today to what is left of the week over the running days left', () => {
     // Thursday 9/24, Wednesday skipped: 50 - 20 - 7.5 - 0 = 22.5 over Thu and Sat.
     const plan = planFor(weeks, '2026-09-24', { '2026-09-23': 0 }, '2026-09-24');

@@ -32,7 +32,7 @@ import {
   weekKey,
   type DayKm,
 } from '../fueling/training';
-import type { Log } from '../storage';
+import { calories, isEmpty, sumDay, type Log, type Totals } from '../storage';
 import { formatNumber, MACROS, useTheme } from '../theme';
 import { MileageWheel } from './MileageWheel';
 import { RunnerProfileForm } from './RunnerProfileForm';
@@ -504,17 +504,21 @@ function DayTargetsCard({
         ) : null}
       </View>
 
-      <View style={styles.macroRow}>
-        {MACROS.map((m) => (
-          <View key={m.key} style={styles.macroCol}>
-            <Text style={[styles.macroLetter, { color: c.macro[m.key] }]}>{m.letter}</Text>
-            <Text style={[styles.macroValue, { color: c.text }]}>
-              {grams[m.key]}
-              <Text style={[styles.unit, { color: c.faint }]}>g</Text>
-            </Text>
-          </View>
-        ))}
-      </View>
+      {past ? (
+        <Compare target={{ kcal: t.kcal, ...grams }} eaten={sumDay(log[day])} />
+      ) : (
+        <View style={styles.macroRow}>
+          {MACROS.map((m) => (
+            <View key={m.key} style={styles.macroCol}>
+              <Text style={[styles.macroLetter, { color: c.macro[m.key] }]}>{m.letter}</Text>
+              <Text style={[styles.macroValue, { color: c.text }]}>
+                {grams[m.key]}
+                <Text style={[styles.unit, { color: c.faint }]}>g</Text>
+              </Text>
+            </View>
+          ))}
+        </View>
+      )}
 
       {t.blocks.length && profile.goal === 'lose' ? (
         <View style={[styles.notice, { backgroundColor: c.surfaceAlt, borderColor: c.border }]}>
@@ -545,6 +549,71 @@ function DayTargetsCard({
             </View>
           ))}
         </View>
+      ) : null}
+    </View>
+  );
+}
+
+/**
+ * A past day: what the page recommends for it next to what was logged. The
+ * recommendation is worked out again from that day's distance as it stands
+ * now, so a run filled in afterwards is what the food gets compared with.
+ */
+function Compare({
+  target,
+  eaten,
+}: {
+  target: { kcal: number; c: number; p: number; f: number };
+  eaten: Totals;
+}) {
+  const { c } = useTheme();
+  const logged = !isEmpty(eaten);
+  const eatenKcal = Math.round(calories(eaten));
+  const cols = [
+    ...MACROS.map((m) => ({
+      key: m.key,
+      head: m.letter,
+      color: c.macro[m.key],
+      target: target[m.key],
+      eaten: Math.round(eaten[m.key]),
+      unit: 'g',
+    })),
+    { key: 'kcal', head: 'KCAL', color: c.muted, target: target.kcal, eaten: eatenKcal, unit: '' },
+  ];
+  const signed = (n: number) => (n > 0 ? `+${formatNumber(n)}` : n < 0 ? `−${formatNumber(-n)}` : '0');
+
+  const row = (label: string, value: (col: (typeof cols)[number]) => string, color: string, bold?: boolean) => (
+    <View style={styles.compareRow}>
+      <Text style={[styles.compareLabel, { color: c.muted }]}>{label}</Text>
+      {cols.map((col) => (
+        <Text
+          key={col.key}
+          style={[styles.compareValue, bold && styles.compareBold, { color }]}
+          numberOfLines={1}
+        >
+          {value(col)}
+        </Text>
+      ))}
+    </View>
+  );
+
+  return (
+    <View style={styles.compare}>
+      <View style={styles.compareRow}>
+        <Text style={styles.compareLabel} />
+        {cols.map((col) => (
+          <Text key={col.key} style={[styles.compareValue, styles.compareHead, { color: col.color }]}>
+            {col.head}
+          </Text>
+        ))}
+      </View>
+      {row('Recommended', (col) => `${formatNumber(col.target)}${col.unit}`, c.text, true)}
+      {row('Logged', (col) => (logged ? `${formatNumber(col.eaten)}${col.unit}` : '—'), c.text, true)}
+      {logged
+        ? row('Difference', (col) => signed(col.eaten - col.target), c.faint)
+        : null}
+      {!logged ? (
+        <Text style={[styles.why, { color: c.faint }]}>Nothing was logged this day.</Text>
       ) : null}
     </View>
   );
@@ -800,6 +869,12 @@ const styles = StyleSheet.create({
   macroCol: { flex: 1, alignItems: 'center' },
   macroLetter: { fontSize: 11, fontWeight: '800', letterSpacing: 1, marginBottom: 2 },
   macroValue: { fontSize: 22, fontWeight: '700', fontVariant: ['tabular-nums'] },
+  compare: { marginTop: 12, gap: 6 },
+  compareRow: { flexDirection: 'row', alignItems: 'baseline' },
+  compareLabel: { flex: 1.5, fontSize: 12, fontWeight: '600' },
+  compareHead: { fontSize: 11, fontWeight: '800', letterSpacing: 1 },
+  compareValue: { flex: 1, textAlign: 'right', fontSize: 13, fontWeight: '500', fontVariant: ['tabular-nums'] },
+  compareBold: { fontSize: 15, fontWeight: '700' },
   divider: { height: StyleSheet.hairlineWidth, marginTop: 14, marginBottom: 6 },
   why: { fontSize: 12, fontWeight: '500', lineHeight: 17, marginTop: 6 },
   notice: {
