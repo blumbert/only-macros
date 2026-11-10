@@ -3,7 +3,7 @@
 // The app can't call Claude itself — the API key would ship inside it, and
 // anyone could pull it out. So the app sends the typed description here; this
 // checks the caller is a Premium subscriber (RevenueCat), holds them to a
-// monthly search cap, and asks Claude (Opus 5.5 with web search) to estimate
+// monthly search cap, and asks Claude (Haiku 5.5 with web search) to estimate
 // the macros, returning one structured report.
 //
 // Nothing is stored except a per-subscriber monthly count and a short-lived
@@ -18,7 +18,11 @@ export interface Env {
   USAGE: KVNamespace;
 }
 
-const MODEL = 'claude-opus-5-5';
+// Haiku 5.5 matched Opus 5.5 on branded foods (same sources, same numbers)
+// in a six-food comparison in November 2026, at about a tenth of the cost:
+// roughly 1.5 cents a search against 14, so even a subscriber who uses all
+// 60 searches costs about $1.50 a month.
+const MODEL = 'claude-haiku-5-5';
 const ENTITLEMENT = 'premium';
 const MONTHLY_LIMIT = 60;
 const MAX_QUERY = 200;
@@ -131,15 +135,12 @@ async function estimate(env: Env, query: string): Promise<Report | null> {
     const response = await client.beta.messages.create({
       model: MODEL,
       max_tokens: 16000,
-      // A food lookup is never something Claude should decline, but if a
-      // safety classifier misfires, this re-runs the request on a fallback
-      // model instead of failing the search.
-      betas: ['server-side-fallback-2026-07-01'],
-      fallbacks: 'default',
       output_config: { effort: 'medium' },
       system: SYSTEM,
       tools: [
-        { type: 'web_search_20260209', name: 'web_search', max_uses: 3 },
+        // Haiku has the original search tool, not the 2026 one with dynamic
+        // filtering; at Haiku's prices reading whole results costs little.
+        { type: 'web_search_20250305', name: 'web_search', max_uses: 3 },
         REPORT_TOOL,
       ],
       messages,
