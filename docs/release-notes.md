@@ -26,6 +26,19 @@ The AI search server (`server/ai-search`) deploys separately with
 
 ---
 
+## 1.0.8
+
+Runner fueling now has its own button at the top of the main screen, next to
+the menu, so you can switch back and forth in one tap.
+
+Step back to an earlier day in Runner fueling to see what was recommended next
+to what you logged, and the difference.
+
+Fixed: a running day set to 0 miles now counts as a rest day, instead of
+keeping that day's carb target and leaving no room for fat.
+
+---
+
 ## 1.0.7
 
 New: Only Macros Premium. Describe what you ate in your own words — "half a
