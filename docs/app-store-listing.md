@@ -2,14 +2,18 @@
 
 The product page text. Each section below goes into the App Store Connect field
 of the same name. The limits are Apple's; recount after any edit (as written:
-subtitle 23, promotional text 143, keywords 100, description 2,773).
+name 25, subtitle 23, promotional text 157, keywords 98, description 2,773).
 
 Premium is an auto-renewable subscription, so Guideline 3.1.2 requires the
 description to keep its Terms of Use and Privacy Policy links (the last lines).
 
-Subtitle, keywords and description only change with a new version; promotional
-text can be changed any time. The subtitle lives under App Information, not on
-the version page.
+Name, subtitle, keywords and description only change with a new version;
+promotional text can be changed any time. The name and subtitle live under App
+Information, not on the version page.
+
+The name is the store listing only. The name under the icon on the home screen
+is `CFBundleDisplayName` in app.json ("Macros"), and changing it needs a new
+build.
 
 **Screenshots** (as of October 2026's App Store Connect): upload them on the
 **Asset Library** page (the + by its title), then place them from the version's
@@ -25,17 +29,26 @@ apps' names (in the copy or in keywords — Apple rejects both).
 
 ---
 
+## Name (30 max)
+
+Only Macros: Easy Tracker
+
+The name counts the most in search, so it carries a word people search for.
+"Easy", not "Easiest": people type the plain word, and a superlative is a claim
+Apple can question. "Macro tracker" still matches from "Macros" in the name
+and "macro" in the keywords.
+
 ## Subtitle (30 max)
 
 Track macros in seconds
 
 ## Promotional text (170 max — can be changed any time, without review)
 
-New: describe what you ate and AI finds the macros, from the real label when it can. Snap a label, log in seconds, still no ads and no account.
+New: Runner fueling. Daily carb, protein and fat targets built around your goal and each day's run, with your runs pulled from Apple Health. Part of Premium.
 
 ## Keywords (100 max — comma-separated, no spaces; words in the name and subtitle are already indexed, so they're not repeated here)
 
-protein,carb,fat,counter,calorie,tracker,iifym,nutrition,label,scanner,food,log,diet,runner,cut,bulk
+protein,carb,fat,counter,calorie,macro,iifym,nutrition,label,scanner,food,log,diet,runner,cut,bulk
 
 ## Description (4,000 max — only the first three lines show before "more", so they carry the page)
 
@@ -71,6 +84,6 @@ Premium is $3.99 a month or $29.99 a year in the US, billed to your Apple accoun
 Terms of Use: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
 Privacy Policy: https://github.com/blumbert/only-macros/blob/main/PRIVACY.md
 
-## What's New in This Version (1.0.7)
+## What's New in This Version (1.0.8)
 
 See `release-notes.md`.
