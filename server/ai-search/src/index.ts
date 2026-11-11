@@ -31,7 +31,11 @@ const MAX_ROUNDS = 4;
 
 const SYSTEM = `You estimate the carbohydrate, protein and fat in a food someone ate, for a macro-tracking app.
 
-Find the real nutrition facts when they exist: search for the specific brand and product, and prefer the maker's own site or a retailer listing that shows the label. If you can't find that product, base the estimate on similar products and say so. Use general nutrition knowledge only for generic foods with no brand.
+Always search before you answer; never give figures from memory alone.
+- A named brand or product: search for that product, and prefer the maker's own site or a retailer listing that shows the label. If you can't find it, base the estimate on similar products and say so.
+- A generic food with no brand: look it up in USDA FoodData Central (fdc.nal.usda.gov) and, where the food is usually bought packaged, check the labels of one or two of the biggest brands too. Use figures in the middle of what you find.
+
+Generic descriptions can cover foods with very different nutrition. "Turkey" could be deli lunch meat, which is mostly water, or roasted breast, which has nearly twice the protein by weight. Pick what the words most likely mean, and say in the explanation which one you assumed, so the person can tell at a glance if it's the wrong one.
 
 Work out the amount the person described: convert it into servings of the label's serving size (for example "half a quart" of ice cream is 4 servings of 1/2 cup). If no amount is given, assume one serving.
 
@@ -71,7 +75,8 @@ const REPORT_TOOL: Anthropic.Beta.BetaTool = {
       basis: {
         type: 'string',
         enum: ['product_label', 'similar_products', 'general_knowledge'],
-        description: 'What the per-serving numbers come from.',
+        description:
+          'What the per-serving numbers come from: product_label for the product\'s own label, similar_products for labels of comparable products, general_knowledge for a generic food\'s typical values from a reference such as USDA.',
       },
       explanation: { type: 'string' },
       sources: {
