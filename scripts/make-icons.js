@@ -1,5 +1,5 @@
 // Generates the app icons for Macros. Pure Node (zlib only) — no native deps.
-// Three pills in the app's carb/protein/fat colours on the app's dark ground.
+// Three round-topped bars in the app's carb/protein/fat colours on the app's dark ground.
 const fs = require('fs');
 const zlib = require('zlib');
 const path = require('path');
@@ -76,19 +76,36 @@ const hex = (h) => [
 
 const clamp01 = (v) => (v < 0 ? 0 : v > 1 ? 1 : v);
 
-// Signed distance to a rounded rect; negative inside. Gives us free antialiasing.
-function sdRoundRect(px, py, cx, cy, hx, hy, r) {
-  const qx = Math.abs(px - cx) - hx + r;
-  const qy = Math.abs(py - cy) - hy + r;
-  const outside = Math.hypot(Math.max(qx, 0), Math.max(qy, 0));
-  return Math.min(Math.max(qx, qy), 0) + outside - r;
+// Signed distance to a circle; negative inside.
+const sdCircle = (px, py, cx, cy, r) => Math.hypot(px - cx, py - cy) - r;
+
+// Signed distance to an axis-aligned box; negative inside.
+function sdBox(px, py, cx, cy, hx, hy) {
+  const qx = Math.abs(px - cx) - hx;
+  const qy = Math.abs(py - cy) - hy;
+  return Math.hypot(Math.max(qx, 0), Math.max(qy, 0)) + Math.min(Math.max(qx, qy), 0);
 }
 
+// Three bars with flat bottoms and round tops. The middle one is the shortest
+// and the left one a little shorter than the right, which sets this apart
+// from the stock three-equal-pills macro icon. Positions are in a 0–100
+// design square, centred on (50, 50).
+const BAR_W = 16;
+const BASELINE = 72;
 const BARS = [
-  { color: '#FFB020', height: 0.274 }, // carbs
-  { color: '#5B9BFF', height: 0.430 }, // protein
-  { color: '#B98BFF', height: 0.352 }, // fat
+  { color: '#FFB020', x: 21, top: 34 }, // carbs
+  { color: '#5B9BFF', x: 42, top: 42 }, // protein
+  { color: '#B98BFF', x: 63, top: 28 }, // fat
 ];
+
+/** Distance (in design units) from (x, y) to a bar: a box under a half-circle cap. */
+function sdBar(x, y, bar) {
+  const r = BAR_W / 2;
+  const cx = bar.x + r;
+  const capY = bar.top + r;
+  const box = sdBox(x, y, cx, (capY + BASELINE) / 2, r, (BASELINE - capY) / 2);
+  return Math.min(box, sdCircle(x, y, cx, capY, r));
+}
 
 /**
  * @param size    output edge length in px
@@ -103,13 +120,6 @@ function render(size, opts = {}) {
   const topRGB = hex('#12151C');
   const botRGB = hex('#08090C');
   const flatRGB = hex('#0A0B0E');
-
-  // Bar geometry, expressed as fractions of the canvas so every size matches.
-  const barW = 0.1484 * scale;
-  const gap = 0.0664 * scale;
-  const blockW = BARS.length * barW + (BARS.length - 1) * gap;
-  const left = 0.5 - blockW / 2;
-  const baseline = 0.5 + 0.215 * scale;
 
   for (let y = 0; y < size; y++) {
     const fy = (y + 0.5) / size;
@@ -133,12 +143,13 @@ function render(size, opts = {}) {
         a = 255;
       }
 
-      for (let k = 0; k < BARS.length; k++) {
+      for (let k = 0; k < BARS.length && scale > 0; k++) {
         const bar = BARS[k];
-        const h = bar.height * scale;
-        const cx = left + barW * (k + 0.5) + gap * k;
-        const cy = baseline - h / 2;
-        const d = sdRoundRect(fx, fy, cx, cy, barW / 2, h / 2, barW / 2);
+        // Canvas point → design square, shrunk around the centre by `scale`.
+        const dx = 50 + ((fx - 0.5) * 100) / scale;
+        const dy = 50 + ((fy - 0.5) * 100) / scale;
+        // Back to pixels: one design unit is size * scale / 100 px.
+        const d = (sdBar(dx, dy, bar) * scale) / 100;
         const cov = clamp01(0.5 - d * size); // ~1px feather
         if (cov <= 0) continue;
         const [br, bg, bb] = mono ? [255, 255, 255] : hex(bar.color);

@@ -121,14 +121,16 @@ automatically. Bump `expo.version` in `app.json` only for user-facing releases
 
 ### Regenerating the icons
 
-`assets/*.png` are generated, not drawn by hand — three pills in the carb,
-protein and fat colours on the app's dark ground. The generator lives at
+`assets/*.png` are generated, not drawn by hand — three round-topped bars in
+the carb, protein and fat colours on the app's dark ground, the middle one
+shortest and the left a little shorter than the right. The generator lives at
 `scripts/make-icons.js`:
 
 ```bash
 node scripts/make-icons.js ./assets
 ```
 
-Colours and bar heights are the `BARS` array at the top. `icon.png` is written
+Colours, positions and heights are the `BARS` array near the top, in a 0–100
+design square. `icon.png` is written
 as RGB with no alpha channel on purpose: App Store Connect rejects app icons
 that carry one.
