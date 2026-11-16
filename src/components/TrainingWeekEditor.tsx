@@ -189,7 +189,7 @@ export function TrainingWeekEditor({ weeks, today, units, onChange }: Props) {
           its own minutes and effort. Typing minutes plans that day. */}
       <View style={[styles.divider, { backgroundColor: c.border }]} />
       <View style={styles.chipRow}>
-        <Text style={[styles.rowLabel, { color: c.muted }]}>Cross-train min</Text>
+        <Text style={[styles.rowLabel, { color: c.muted }]}>Cross-train</Text>
         <View style={styles.chips}>
           {WEEKDAY_INITIALS.map((_, i) => {
             const on = xt.min[i] > 0;
@@ -197,6 +197,7 @@ export function TrainingWeekEditor({ weeks, today, units, onChange }: Props) {
               <TextInput
                 inputAccessoryViewID={DONE_ID}
                 key={i}
+                maxFontSizeMultiplier={1.2}
                 value={showWhole(xt.min[i])}
                 onChangeText={(v) => setXtMin(i, v.replace(/[^0-9]/g, ''))}
                 keyboardType="number-pad"
@@ -220,7 +221,7 @@ export function TrainingWeekEditor({ weeks, today, units, onChange }: Props) {
       </View>
       {/* Above the hint and the cards below, so an open list floats over them. */}
       <View style={[styles.chipRow, styles.raised]}>
-        <Text style={[styles.rowLabel, { color: c.muted }]}>Effort 1–10</Text>
+        <Text style={[styles.rowLabel, { color: c.muted }]}>Effort</Text>
         <View style={styles.chips}>
           {WEEKDAY_INITIALS.map((_, i) =>
             xt.min[i] > 0 ? (

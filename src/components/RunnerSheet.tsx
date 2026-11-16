@@ -35,7 +35,6 @@ import {
   planFor,
   plannedCrossTraining,
   weekFor,
-  weekKey,
   type DayKm,
 } from '../fueling/training';
 import { calories, isEmpty, sumDay, type Log, type Totals } from '../storage';
@@ -258,7 +257,6 @@ export function RunnerSheet({ visible, onClose, log, today }: Props) {
                     log={log}
                     today={today}
                     weeks={planned.weeks}
-                    healthWeeks={planned.fromHealth}
                     dayKm={dayKm}
                     onSetKm={runner.setDayKm}
                     xtFor={xtFor}
@@ -346,7 +344,6 @@ function DayTargetsCard({
   log,
   today,
   weeks,
-  healthWeeks,
   dayKm,
   onSetKm,
   xtFor,
@@ -358,8 +355,6 @@ function DayTargetsCard({
   log: Log;
   today: DayKey;
   weeks: ReturnType<typeof useRunner>['weeks'];
-  /** Week keys in `weeks` read off Apple Health rather than entered. */
-  healthWeeks: DayKey[];
   /** Every known distance: hand-set over Apple Health. */
   dayKm: DayKm;
   onSetKm: (day: DayKey, km: number | null) => void;
@@ -383,9 +378,6 @@ function DayTargetsCard({
   const found = weekFor(weeks, day);
   const problem = found ? checkWeek(found.week) : null;
   // A later week that hasn't been entered borrows the most recent one.
-  const fromHealthWeek = !!found && healthWeeks.includes(found.key) && day >= today;
-  const borrowed =
-    !fromHealthWeek && found?.carried && weekKey(day) > weekKey(today) ? found.key : null;
 
   const header = (
     <View style={styles.dayNav}>
@@ -491,21 +483,10 @@ function DayTargetsCard({
   return (
     <View style={[styles.card, styles.raisedCard, { backgroundColor: c.surface, borderColor: c.border }]}>
       {header}
-      {borrowed ? (
-        <Text style={[styles.why, { color: c.faint }]}>
-          That week isn&apos;t entered yet, so this uses the plan from the week of{' '}
-          {shortDate(borrowed)}.
-        </Text>
-      ) : fromHealthWeek ? (
-        <Text style={[styles.why, { color: c.faint }]}>
-          No training entered, so this follows your last 7 days in Apple Health. Enter your
-          week below to plan it yourself.
-        </Text>
-      ) : null}
 
       {/* The day's training, side by side: the run, and cross-training. */}
       <View style={styles.training}>
-        <View style={styles.trainingCol}>
+        <View style={[styles.trainingCol, styles.trainingColNarrow]}>
           <Text style={[styles.trainingLabel, { color: c.muted }]}>RUN</Text>
           <View style={styles.pickRow}>
             <Dropdown
@@ -529,7 +510,7 @@ function DayTargetsCard({
           </View>
         </View>
         <View style={[styles.trainingDivider, { backgroundColor: c.border }]} />
-        <View style={styles.trainingCol}>
+        <View style={[styles.trainingCol, styles.trainingColWide]}>
           <Text style={[styles.trainingLabel, { color: c.muted }]}>CROSS-TRAINING</Text>
           <View style={styles.pickRow}>
             <Dropdown
@@ -540,24 +521,22 @@ function DayTargetsCard({
               onChange={(min) =>
                 onSetXt(day, { min, effort: xt.effort ?? RULES.crossTraining.defaultEffort })
               }
-              width={60}
+              suffix="min"
+              width={86}
             />
-            <Text style={[styles.unit, { color: c.faint }]}>min</Text>
             {xt.min > 0 ? (
               <Dropdown
                 key={`effort-${day}`}
-                label="Effort"
+                label="Effort, 1 to 10"
                 value={xt.effort ?? 0}
                 display={xt.effort === null ? '–' : undefined}
+                suffix="rpe"
                 options={optionRange(RULES.crossTraining.minEffort, RULES.crossTraining.maxEffort)}
                 onChange={(effort) => onSetXt(day, { min: xt.min, effort })}
-                width={46}
+                width={70}
               />
             ) : null}
           </View>
-          {xt.min > 0 ? (
-            <Text style={[styles.effortCaption, { color: c.faint }]}>effort 1–10</Text>
-          ) : null}
         </View>
       </View>
 
@@ -565,17 +544,16 @@ function DayTargetsCard({
       <Text style={[styles.dayLabel, styles.dayLabelBelow, { color: c.muted }]}>
         Recommended for {DAY_NOUN[plan.type]}
       </Text>
-      <Text style={[styles.kcal, styles.kcalAlone, { color: c.text }]}>
-        {formatNumber(t.kcal)}
-        <Text style={[styles.unit, { color: c.faint }]}> kcal</Text>
-      </Text>
 
       {past ? (
         <Compare target={{ kcal: t.kcal, ...grams }} eaten={sumDay(log[day])} />
       ) : (
         <>
+          {/* Carbs, protein and fat lead; calories are just what they add up
+              to, so they sit small on the right. The side columns match in
+              width so the three macros stay centred. */}
           <View style={styles.macroRow}>
-            {offset === 0 ? <View style={styles.vsLabelCol} /> : null}
+            <View style={styles.sideCol} />
             {MACROS.map((m) => (
               <View key={m.key} style={styles.macroCol}>
                 <Text style={[styles.macroLetter, { color: c.macro[m.key] }]}>{m.letter}</Text>
@@ -585,15 +563,16 @@ function DayTargetsCard({
                 </Text>
               </View>
             ))}
+            <View style={[styles.sideCol, styles.kcalCol]}>
+              <Text style={[styles.macroLetter, { color: c.muted }]}>KCAL</Text>
+              <Text style={[styles.kcalValue, { color: c.muted }]}>{formatNumber(t.kcal)}</Text>
+            </View>
           </View>
           {/* What's been logged today so far, under what's recommended. */}
           {offset === 0 ? (
             <View style={[styles.macroRow, styles.vsRow]}>
-              <View style={styles.vsLabelCol}>
+              <View style={styles.sideCol}>
                 <Text style={[styles.vsLabel, { color: c.muted }]}>vs. today</Text>
-                <Text style={[styles.vsKcal, { color: c.faint }]}>
-                  {formatNumber(calories(eatenToday))} kcal
-                </Text>
               </View>
               {MACROS.map((m) => (
                 <View key={m.key} style={styles.macroCol}>
@@ -603,6 +582,11 @@ function DayTargetsCard({
                   </Text>
                 </View>
               ))}
+              <View style={[styles.sideCol, styles.kcalCol]}>
+                <Text style={[styles.kcalValue, { color: c.faint }]}>
+                  {formatNumber(calories(eatenToday))}
+                </Text>
+              </View>
             </View>
           ) : null}
         </>
@@ -959,9 +943,10 @@ const styles = StyleSheet.create({
   macroRow: { flexDirection: 'row', marginTop: 10 },
   macroCol: { flex: 1, alignItems: 'center' },
   vsRow: { marginTop: 6, alignItems: 'center' },
-  vsLabelCol: { width: 68 },
+  sideCol: { width: 62, justifyContent: 'flex-end' },
+  kcalCol: { alignItems: 'center', justifyContent: 'flex-start' },
+  kcalValue: { fontSize: 15, fontWeight: '700', fontVariant: ['tabular-nums'] },
   vsLabel: { fontSize: 12, fontWeight: '700' },
-  vsKcal: { fontSize: 11, fontWeight: '600', marginTop: 1 },
   vsValue: { fontSize: 16, fontWeight: '700', fontVariant: ['tabular-nums'] },
   macroLetter: { fontSize: 11, fontWeight: '800', letterSpacing: 1, marginBottom: 2 },
   macroValue: { fontSize: 22, fontWeight: '700', fontVariant: ['tabular-nums'] },
@@ -983,16 +968,17 @@ const styles = StyleSheet.create({
   noticeTitle: { fontSize: 13, fontWeight: '700' },
   noticeText: { fontSize: 12, fontWeight: '500', lineHeight: 17 },
   dayLabelBelow: { marginTop: 14 },
-  kcalAlone: { marginTop: 2, marginBottom: 6, textAlign: 'center' },
   // Above what follows, so an open dropdown floats over the numbers below.
   // Over the cards below it, for the dropdowns.
   raisedCard: { zIndex: 20 },
   training: { flexDirection: 'row', marginTop: 18, marginBottom: 8, zIndex: 10 },
   pickRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   trainingCol: { flex: 1, alignItems: 'center', gap: 6 },
+  // The run needs less room than cross-training's two wider boxes.
+  trainingColNarrow: { flex: 0.85 },
+  trainingColWide: { flex: 1.15 },
   trainingLabel: { fontSize: 10, fontWeight: '700', letterSpacing: 0.8 },
   trainingDivider: { width: StyleSheet.hairlineWidth * 2, marginHorizontal: 8 },
-  effortCaption: { fontSize: 10, fontWeight: '600' },
   warnings: { marginTop: 10, gap: 8 },
   warningRow: { flexDirection: 'row', gap: 6, alignItems: 'flex-start' },
   eaWarning: { marginTop: 8 },

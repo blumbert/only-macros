@@ -20,6 +20,7 @@ export function Dropdown({
   onChange,
   label,
   display,
+  suffix,
   width = 56,
   compact = false,
 }: {
@@ -30,6 +31,8 @@ export function Dropdown({
   label: string;
   /** What the box shows, when it isn't the selected option's label. */
   display?: string;
+  /** A unit shown in gray after the value, e.g. "min". */
+  suffix?: string;
   width?: number;
   /** Small, to fit a grid column. */
   compact?: boolean;
@@ -60,8 +63,13 @@ export function Dropdown({
           },
         ]}
       >
-        <Text style={[styles.value, compact && styles.valueCompact, { color: c.text }]} numberOfLines={1}>
+        <Text
+          style={[styles.value, compact && styles.valueCompact, { color: c.text }]}
+          numberOfLines={1}
+          maxFontSizeMultiplier={1.2}
+        >
           {shown}
+          {suffix ? <Text style={[styles.suffix, { color: c.faint }]}> {suffix}</Text> : null}
         </Text>
         <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={compact ? 8 : 12} color={c.muted} />
       </Pressable>
@@ -103,7 +111,10 @@ export function Dropdown({
                     { backgroundColor: on ? c.surfaceAlt : pressed ? c.surfaceAlt : 'transparent' },
                   ]}
                 >
-                  <Text style={[styles.rowText, { color: c.text, fontWeight: on ? '800' : '600' }]}>
+                  <Text
+                    style={[styles.rowText, { color: c.text, fontWeight: on ? '800' : '600' }]}
+                    maxFontSizeMultiplier={1.2}
+                  >
                     {o.label}
                   </Text>
                 </Pressable>
@@ -135,6 +146,7 @@ const styles = StyleSheet.create({
   },
   boxCompact: { height: 26, borderRadius: 8, paddingHorizontal: 4, gap: 1, justifyContent: 'center' },
   valueCompact: { fontSize: 12 },
+  suffix: { fontSize: 12, fontWeight: '600' },
   listCompact: { top: 30 },
   value: { flexShrink: 1, fontSize: 15, fontWeight: '700', fontVariant: ['tabular-nums'] },
   list: {
