@@ -495,7 +495,7 @@ function DayTargetsCard({
               value={wholePart}
               options={optionRange(0, Math.max(99, wholePart))}
               onChange={(w) => setDistance(w, tenthPart)}
-              width={54}
+              width={44}
             />
             <Text style={[styles.unit, { color: c.faint }]}>.</Text>
             <Dropdown
@@ -504,7 +504,7 @@ function DayTargetsCard({
               value={tenthPart}
               options={optionRange(0, 9)}
               onChange={(tn) => setDistance(wholePart, tn)}
-              width={46}
+              width={36}
             />
             <Text style={[styles.unit, { color: c.faint }]}>{unit}</Text>
           </View>
@@ -521,7 +521,7 @@ function DayTargetsCard({
               onChange={(min) =>
                 onSetXt(day, { min, effort: xt.effort ?? RULES.crossTraining.defaultEffort })
               }
-              width={60}
+              width={50}
             />
             <Text style={[styles.unit, { color: c.faint }]}>min</Text>
             <Dropdown
@@ -531,7 +531,7 @@ function DayTargetsCard({
               display={xt.min > 0 && xt.effort === null ? '–' : undefined}
               options={optionRange(RULES.crossTraining.minEffort, RULES.crossTraining.maxEffort)}
               onChange={(effort) => onSetXt(day, { min: xt.min, effort })}
-              width={48}
+              width={38}
             />
             <Text style={[styles.unit, { color: c.faint }]}>rpe</Text>
           </View>

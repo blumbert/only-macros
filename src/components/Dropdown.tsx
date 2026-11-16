@@ -67,7 +67,10 @@ export function Dropdown({
         >
           {shown}
         </Text>
-        <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={compact ? 8 : 12} color={c.muted} />
+        {/* Only the tiny grid boxes keep an arrow; the regular ones are clear enough as boxes. */}
+        {compact ? (
+          <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={8} color={c.muted} />
+        ) : null}
       </Pressable>
       {open ? (
         <View
@@ -137,7 +140,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     gap: 4,
   },
   boxCompact: { height: 26, borderRadius: 8, paddingHorizontal: 4, gap: 1, justifyContent: 'center' },
