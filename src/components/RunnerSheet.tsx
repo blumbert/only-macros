@@ -493,7 +493,7 @@ function DayTargetsCard({
               key={`whole-${day}`}
               label={imperial ? 'Miles' : 'Kilometres'}
               value={wholePart}
-              options={optionRange(0, Math.max(imperial ? 50 : 80, wholePart))}
+              options={optionRange(0, Math.max(99, wholePart))}
               onChange={(w) => setDistance(w, tenthPart)}
               width={54}
             />
@@ -521,19 +521,19 @@ function DayTargetsCard({
               onChange={(min) =>
                 onSetXt(day, { min, effort: xt.effort ?? RULES.crossTraining.defaultEffort })
               }
-              suffix="min"
-              width={86}
+              width={60}
             />
+            <Text style={[styles.unit, { color: c.faint }]}>min</Text>
             <Dropdown
               key={`effort-${day}`}
               label="Effort, 1 to 10"
               value={xt.effort ?? RULES.crossTraining.defaultEffort}
               display={xt.min > 0 && xt.effort === null ? '–' : undefined}
-              suffix="rpe"
               options={optionRange(RULES.crossTraining.minEffort, RULES.crossTraining.maxEffort)}
               onChange={(effort) => onSetXt(day, { min: xt.min, effort })}
-              width={70}
+              width={48}
             />
+            <Text style={[styles.unit, { color: c.faint }]}>rpe</Text>
           </View>
         </View>
       </View>
@@ -550,11 +550,23 @@ function DayTargetsCard({
           {/* Carbs, protein and fat lead; calories are just what they add up
               to, so they sit small on the right. The side columns match in
               width so the three macros stay centred. */}
+          {/* Letters, then numbers on a shared baseline, so the smaller
+              calories figure lines up with the macros. */}
           <View style={styles.macroRow}>
             <View style={styles.sideCol} />
             {MACROS.map((m) => (
               <View key={m.key} style={styles.macroCol}>
                 <Text style={[styles.macroLetter, { color: c.macro[m.key] }]}>{m.letter}</Text>
+              </View>
+            ))}
+            <View style={[styles.sideCol, styles.kcalCol]}>
+              <Text style={[styles.macroLetter, { color: c.muted }]}>KCAL</Text>
+            </View>
+          </View>
+          <View style={styles.valueRow}>
+            <View style={styles.sideCol} />
+            {MACROS.map((m) => (
+              <View key={m.key} style={styles.macroCol}>
                 <Text style={[styles.macroValue, { color: c.text }]}>
                   {grams[m.key]}
                   <Text style={[styles.unit, { color: c.faint }]}>g</Text>
@@ -562,7 +574,6 @@ function DayTargetsCard({
               </View>
             ))}
             <View style={[styles.sideCol, styles.kcalCol]}>
-              <Text style={[styles.macroLetter, { color: c.muted }]}>KCAL</Text>
               <Text style={[styles.kcalValue, { color: c.muted }]}>{formatNumber(t.kcal)}</Text>
             </View>
           </View>
@@ -940,7 +951,8 @@ const styles = StyleSheet.create({
   unit: { fontSize: 13, fontWeight: '600' },
   macroRow: { flexDirection: 'row', marginTop: 10 },
   macroCol: { flex: 1, alignItems: 'center' },
-  vsRow: { marginTop: 6, alignItems: 'center' },
+  valueRow: { flexDirection: 'row', alignItems: 'baseline' },
+  vsRow: { marginTop: 6, alignItems: 'baseline' },
   sideCol: { width: 62, justifyContent: 'flex-end' },
   kcalCol: { alignItems: 'center', justifyContent: 'flex-start' },
   kcalValue: { fontSize: 15, fontWeight: '700', fontVariant: ['tabular-nums'] },

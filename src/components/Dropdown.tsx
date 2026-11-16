@@ -20,7 +20,6 @@ export function Dropdown({
   onChange,
   label,
   display,
-  suffix,
   width = 56,
   compact = false,
 }: {
@@ -31,8 +30,6 @@ export function Dropdown({
   label: string;
   /** What the box shows, when it isn't the selected option's label. */
   display?: string;
-  /** A unit shown in gray after the value, e.g. "min". */
-  suffix?: string;
   width?: number;
   /** Small, to fit a grid column. */
   compact?: boolean;
@@ -70,11 +67,6 @@ export function Dropdown({
         >
           {shown}
         </Text>
-        {suffix ? (
-          <Text style={[styles.suffix, { color: c.faint }]} maxFontSizeMultiplier={1.2}>
-            {suffix}
-          </Text>
-        ) : null}
         <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={compact ? 8 : 12} color={c.muted} />
       </Pressable>
       {open ? (
@@ -150,8 +142,6 @@ const styles = StyleSheet.create({
   },
   boxCompact: { height: 26, borderRadius: 8, paddingHorizontal: 4, gap: 1, justifyContent: 'center' },
   valueCompact: { fontSize: 12 },
-  // Pushed right, next to the arrow, with the value on the left.
-  suffix: { marginLeft: 'auto', fontSize: 12, fontWeight: '600' },
   listCompact: { top: 30 },
   value: { flexShrink: 1, fontSize: 15, fontWeight: '700', fontVariant: ['tabular-nums'] },
   list: {
