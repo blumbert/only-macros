@@ -359,6 +359,14 @@ async function main() {
     screens['5-runner'] = await captureApp(page, async () => {
       __press('[aria-label="Runner fueling"]');
       await __wait(1200);
+      // The sample day's numbers are hand-set (the web preview has no Apple
+      // Health), which shows the Use Plan links. On a phone, numbers from Health
+      // look the same without them, so the screenshot shows that clean state.
+      for (const el of document.querySelectorAll('div, span')) {
+        if (/^Use (Plan|Health)$/.test(el.textContent || '') && !el.querySelector('div')) {
+          (el.closest('[role="button"]') || el).style.visibility = 'hidden';
+        }
+      }
     });
 
     fs.rmSync(photo);
