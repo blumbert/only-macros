@@ -78,7 +78,7 @@ function dayHeading(day: DayKey, offset: number): string {
 const OVER_COLOR = '#1F9D55';
 /** The day card's columns: the three macros, then the calories they add up to. */
 const COLUMNS = [
-  ...MACROS.map((m) => ({ key: m.key, letter: `${m.letter} (g)` })),
+  ...MACROS.map((m) => ({ key: m.key, letter: m.letter })),
   { key: 'kcal' as const, letter: 'CAL' },
 ];
 const UNDER_COLOR = '#E5484D';
@@ -593,7 +593,7 @@ function DayTargetsCard({
       {/* One heading over the numbers; carbs, protein, fat, then calories. The
           second row is what was logged that day (so far, for today). */}
       <Text style={[styles.tvtHead, { color: c.muted }]}>
-        {offset > 0 ? 'Targets' : offset === 0 ? 'Targets vs today' : 'Targets vs logged'}
+        {offset > 0 ? 'Targets (g)' : offset === 0 ? 'Targets vs today (g)' : 'Targets vs logged (g)'}
       </Text>
       <View style={styles.macroRow}>
         {COLUMNS.map((m) => (
