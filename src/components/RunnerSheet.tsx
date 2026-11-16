@@ -524,18 +524,16 @@ function DayTargetsCard({
               suffix="min"
               width={86}
             />
-            {xt.min > 0 ? (
-              <Dropdown
-                key={`effort-${day}`}
-                label="Effort, 1 to 10"
-                value={xt.effort ?? 0}
-                display={xt.effort === null ? '–' : undefined}
-                suffix="rpe"
-                options={optionRange(RULES.crossTraining.minEffort, RULES.crossTraining.maxEffort)}
-                onChange={(effort) => onSetXt(day, { min: xt.min, effort })}
-                width={70}
-              />
-            ) : null}
+            <Dropdown
+              key={`effort-${day}`}
+              label="Effort, 1 to 10"
+              value={xt.effort ?? RULES.crossTraining.defaultEffort}
+              display={xt.min > 0 && xt.effort === null ? '–' : undefined}
+              suffix="rpe"
+              options={optionRange(RULES.crossTraining.minEffort, RULES.crossTraining.maxEffort)}
+              onChange={(effort) => onSetXt(day, { min: xt.min, effort })}
+              width={70}
+            />
           </View>
         </View>
       </View>

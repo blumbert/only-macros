@@ -69,8 +69,12 @@ export function Dropdown({
           maxFontSizeMultiplier={1.2}
         >
           {shown}
-          {suffix ? <Text style={[styles.suffix, { color: c.faint }]}> {suffix}</Text> : null}
         </Text>
+        {suffix ? (
+          <Text style={[styles.suffix, { color: c.faint }]} maxFontSizeMultiplier={1.2}>
+            {suffix}
+          </Text>
+        ) : null}
         <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={compact ? 8 : 12} color={c.muted} />
       </Pressable>
       {open ? (
@@ -146,7 +150,8 @@ const styles = StyleSheet.create({
   },
   boxCompact: { height: 26, borderRadius: 8, paddingHorizontal: 4, gap: 1, justifyContent: 'center' },
   valueCompact: { fontSize: 12 },
-  suffix: { fontSize: 12, fontWeight: '600' },
+  // Pushed right, next to the arrow, with the value on the left.
+  suffix: { marginLeft: 'auto', fontSize: 12, fontWeight: '600' },
   listCompact: { top: 30 },
   value: { flexShrink: 1, fontSize: 15, fontWeight: '700', fontVariant: ['tabular-nums'] },
   list: {
