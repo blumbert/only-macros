@@ -82,6 +82,17 @@ const LABEL_LINES = [
 
 /** Runs in the page before the app: the stand-in Vision module and tap helpers. */
 function beforeApp(lines) {
+  // The scan button opens the app's own camera straight away; a headless
+  // browser has no camera, so it gets a blank one to open and close.
+  if (navigator.mediaDevices) {
+    navigator.mediaDevices.getUserMedia = async () => {
+      const c = document.createElement('canvas');
+      c.width = 640;
+      c.height = 480;
+      c.getContext('2d').fillRect(0, 0, 640, 480);
+      return c.captureStream();
+    };
+  }
   globalThis.ExpoDomWebView = {
     expoModulesProxy: { LabelText: { recognize: async () => lines } },
   };
@@ -172,6 +183,8 @@ function seed() {
     km: 32 * 1.609344,
     longRunKm: 12 * 1.609344,
     days: ['rest', 'easy', 'workout', 'easy', 'workout', 'rest', 'long'],
+    // Cross-training planned on two days, so This week shows it filled in.
+    xt: { min: [0, 45, 0, 0, 30, 0, 0], effort: [5, 5, 5, 5, 6, 5, 5] },
   };
   const runner = {
     // On their feet all day: a desk job at maintenance lands just under the
@@ -180,6 +193,7 @@ function seed() {
     units: 'imperial',
     weeks: { [key(lastSunday)]: week, [key(sunday)]: week },
     dayKm: {},
+    dayXt: { [key(today)]: { min: 45, effort: 5 } },
   };
 
   localStorage.setItem('macrotracker.log.v1', JSON.stringify(log));
@@ -274,7 +288,8 @@ function frameHtml(shot, screenPng, size) {
 
 async function main() {
   fs.mkdirSync(OUT, { recursive: true });
-  const browser = await puppeteer.launch({ executablePath: BROWSER, headless: true });
+  // A pipe rather than a websocket: more reliable when the browser is also open normally.
+  const browser = await puppeteer.launch({ executablePath: BROWSER, headless: true, pipe: true });
   try {
     const page = await browser.newPage();
     await page.emulateMediaFeatures([{ name: 'prefers-color-scheme', value: 'dark' }]);
@@ -305,7 +320,14 @@ async function main() {
       await __wait(300);
     });
 
-    await page.evaluate(() => __menu('Scan a label'));
+    // Scan a label is the button beside the menu; it opens the camera first.
+    await page.evaluate(async () => {
+      __press('[aria-label="Scan a label"]');
+      await __wait(1800);
+      const close = document.querySelector('[aria-label="Close the camera"]');
+      if (close) __press(close);
+      await __wait(900);
+    });
     const [chooser] = await Promise.all([
       page.waitForFileChooser(),
       page.evaluate(() => __press('Choose photo')),
@@ -332,7 +354,11 @@ async function main() {
     screens['4-calendar'] = await captureApp(page, () => __menu('Calendar'));
 
     await page.evaluate(async () => { __press('Done'); await __wait(700); });
-    screens['5-runner'] = await captureApp(page, () => __menu('Runner fueling'));
+    // Runner fueling is the footsteps button beside the menu.
+    screens['5-runner'] = await captureApp(page, async () => {
+      __press('[aria-label="Runner fueling"]');
+      await __wait(1200);
+    });
 
     fs.rmSync(photo);
 
