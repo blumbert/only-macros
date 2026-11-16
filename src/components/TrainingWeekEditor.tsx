@@ -33,6 +33,8 @@ export function TrainingWeekEditor({ weeks, today, units, onChange }: Props) {
   const { c } = useTheme();
   const thisWeek = weekKey(today);
   const [viewKey, setViewKey] = useState(thisWeek);
+  // "How does this work?" starts folded away.
+  const [showHow, setShowHow] = useState(false);
 
   const found = weekFor(weeks, viewKey);
   const entered = weeks[viewKey];
@@ -242,9 +244,6 @@ export function TrainingWeekEditor({ weeks, today, units, onChange }: Props) {
         </View>
       </View>
 
-      <Text style={[styles.hint, { color: c.faint }]}>
-        Days you don&apos;t mark are easy days.
-      </Text>
       {problem ? (
         <Text style={[styles.error, { color: c.macro.c }]}>
           {problem === 'longRunMissing'
@@ -252,6 +251,64 @@ export function TrainingWeekEditor({ weeks, today, units, onChange }: Props) {
             : 'The long run is longer than the whole week.'}
         </Text>
       ) : null}
+
+      <View style={[styles.divider, { backgroundColor: c.border }]} />
+      <Pressable
+        onPress={() => setShowHow((v) => !v)}
+        hitSlop={8}
+        accessibilityRole="button"
+        accessibilityState={{ expanded: showHow }}
+        style={styles.howToggle}
+      >
+        <Text style={[styles.howToggleText, { color: c.muted }]}>How does this work?</Text>
+        <Ionicons name={showHow ? 'chevron-up' : 'chevron-down'} size={14} color={c.muted} />
+      </Pressable>
+      {showHow ? <HowItWorks units={units} /> : null}
+    </View>
+  );
+}
+
+/**
+ * The plan in plain words: what marking a day does to the targets, and where
+ * each day's distance in Daily Targets comes from. Kept simple enough for a
+ * sixth grader.
+ */
+function HowItWorks({ units }: { units: Units }) {
+  const { c } = useTheme();
+  const dist = units === 'imperial' ? 'miles' : 'kilometers';
+  const head = [styles.howHead, { color: c.text }];
+  const body = [styles.howText, { color: c.muted }];
+  return (
+    <View style={styles.how}>
+      <Text style={head}>Marking your days</Text>
+      <Text style={body}>
+        Each day you mark tells the app how hard that day is. Carbs are your
+        body&apos;s main fuel for running, so harder days get more of them:
+      </Text>
+      <Text style={body}>• Rest: the fewest carbs.</Text>
+      <Text style={body}>• Easy: a medium amount. Days you don&apos;t mark are easy days.</Text>
+      <Text style={body}>• Workouts (like speed work or hills): more carbs.</Text>
+      <Text style={body}>• Long run: the most carbs.</Text>
+      <Text style={body}>Protein stays about the same every day.</Text>
+
+      <Text style={head}>Your {dist}</Text>
+      <Text style={body}>
+        The long run gets the {dist} you typed in for it, and rest days get
+        none. Whatever is left of your total {dist} is split evenly across your
+        easy and workout days.
+      </Text>
+      <Text style={body}>
+        Each day&apos;s share shows up as that day&apos;s {dist} in Daily
+        Targets. Running farther burns more energy, so more {dist} means higher
+        targets.
+      </Text>
+
+      <Text style={head}>Ran a different distance?</Text>
+      <Text style={body}>
+        Change that day&apos;s {dist} in Daily Targets to what you actually ran.
+        The {dist} left in your week are split again across the days still to
+        come, so the rest of your week stays on track.
+      </Text>
     </View>
   );
 }
@@ -350,6 +407,10 @@ const styles = StyleSheet.create({
   dayHead: { width: 34, textAlign: 'center', fontSize: 12, fontWeight: '700' },
   sectionHead: { fontSize: 13, fontWeight: '700', marginTop: 10 },
   divider: { height: StyleSheet.hairlineWidth * 2, marginTop: 14, marginBottom: 2 },
-  hint: { fontSize: 11, fontWeight: '500', marginTop: 12 },
+  howToggle: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 2 },
+  howToggleText: { fontSize: 13, fontWeight: '600' },
+  how: { marginTop: 4 },
+  howHead: { fontSize: 13, fontWeight: '700', marginTop: 10 },
+  howText: { fontSize: 13, fontWeight: '500', lineHeight: 18, marginTop: 4 },
   error: { fontSize: 13, fontWeight: '600', marginTop: 8 },
 });
