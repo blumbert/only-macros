@@ -581,7 +581,7 @@ function DayTargetsCard({
           {offset === 0 ? (
             <View style={[styles.macroRow, styles.vsRow]}>
               <View style={styles.sideCol}>
-                <Text style={[styles.vsLabel, { color: c.muted }]}>vs. today</Text>
+                <Text style={[styles.vsLabel, { color: c.muted }]}>Today</Text>
               </View>
               {MACROS.map((m) => (
                 <View key={m.key} style={styles.macroCol}>
@@ -953,7 +953,7 @@ const styles = StyleSheet.create({
   macroCol: { flex: 1, alignItems: 'center' },
   valueRow: { flexDirection: 'row', alignItems: 'baseline' },
   vsRow: { marginTop: 6, alignItems: 'baseline' },
-  sideCol: { width: 62, justifyContent: 'flex-end' },
+  sideCol: { width: 48, justifyContent: 'flex-end' },
   kcalCol: { alignItems: 'center', justifyContent: 'flex-start' },
   kcalValue: { fontSize: 15, fontWeight: '700', fontVariant: ['tabular-nums'] },
   vsLabel: { fontSize: 12, fontWeight: '700' },
