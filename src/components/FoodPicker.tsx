@@ -16,6 +16,7 @@ import type { Food } from '../foods';
 import { useTheme } from '../theme';
 import { FoodRow } from './FoodsSheet';
 import { ServingsInput } from './ServingsInput';
+import { DONE_ID } from './KeyboardDone';
 
 /** Search shows once the list is long enough to need it. */
 const SEARCH_FROM = 8;
@@ -137,6 +138,7 @@ export function FoodPickerSheet({
               <View style={[styles.search, { backgroundColor: c.surface, borderColor: c.border }]}>
                 <Ionicons name="search" size={16} color={c.faint} />
                 <TextInput
+                  inputAccessoryViewID={DONE_ID}
                   value={query}
                   onChangeText={setQuery}
                   placeholder="Search"

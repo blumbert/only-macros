@@ -4,7 +4,6 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
   Keyboard,
-  KeyboardAvoidingView,
   Platform,
   Pressable,
   ScrollView,
@@ -40,6 +39,7 @@ import { usePremium } from './src/premium/usePremium';
 import { sumDay } from './src/storage';
 import { formatGrams, MACROS, useTheme, type MacroKey } from './src/theme';
 import { useLog } from './src/useLog';
+import { KeyboardDoneBar } from './src/components/KeyboardDone';
 
 type Draft = Record<MacroKey, string>;
 
@@ -208,11 +208,9 @@ function Screen() {
     <SafeAreaView style={styles.root} edges={['top', 'left', 'right']}>
       <StatusBar style={isDark ? 'light' : 'dark'} />
 
-      <KeyboardAvoidingView
-        style={styles.root}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      >
+      <View style={styles.root}>
         <ScrollView
+          automaticallyAdjustKeyboardInsets
           contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 40 }]}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="interactive"
@@ -334,7 +332,8 @@ function Screen() {
           </View>
           </View>
         </ScrollView>
-      </KeyboardAvoidingView>
+      </View>
+      <KeyboardDoneBar />
 
       {lastAdd ? (
         <Animated.View

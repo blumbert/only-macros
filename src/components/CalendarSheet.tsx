@@ -1,7 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useMemo, useState } from 'react';
 import {
-  KeyboardAvoidingView,
   Modal,
   Platform,
   Pressable,
@@ -25,6 +24,7 @@ import type { FoodsStore } from '../foods';
 import { calories, sumDay, type Log, type Totals } from '../storage';
 import { formatNumber, useTheme } from '../theme';
 import { DayCard } from './DayCard';
+import { KeyboardDoneBar } from './KeyboardDone';
 
 type Props = {
   visible: boolean;
@@ -145,11 +145,9 @@ export function CalendarSheet({
           </Pressable>
         </View>
 
-        <KeyboardAvoidingView
-          style={styles.flex}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        >
+        <View style={styles.flex}>
         <ScrollView
+          automaticallyAdjustKeyboardInsets
           contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 24 }]}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
@@ -247,7 +245,8 @@ export function CalendarSheet({
                 (month.finished ? '  ·  ' + formatNumber(month.average) + ' kcal average' : '')}
           </Text>
         </ScrollView>
-        </KeyboardAvoidingView>
+        </View>
+        <KeyboardDoneBar />
       </View>
     </Modal>
   );

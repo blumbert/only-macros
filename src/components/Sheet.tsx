@@ -1,6 +1,5 @@
 import type { ReactNode } from 'react';
 import {
-  KeyboardAvoidingView,
   Modal,
   Platform,
   Pressable,
@@ -12,6 +11,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useTheme } from '../theme';
+import { KeyboardDoneBar } from './KeyboardDone';
 
 type Props = {
   visible: boolean;
@@ -50,11 +50,9 @@ export function Sheet({ visible, onClose, title, onShow, closeLabel = 'Done', ch
           </Pressable>
         </View>
 
-        <KeyboardAvoidingView
-          style={styles.flex}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        >
+        <View style={styles.flex}>
           <ScrollView
+            automaticallyAdjustKeyboardInsets
             contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 32 }]}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
@@ -62,7 +60,8 @@ export function Sheet({ visible, onClose, title, onShow, closeLabel = 'Done', ch
           >
             <View style={styles.content}>{children}</View>
           </ScrollView>
-        </KeyboardAvoidingView>
+        </View>
+        <KeyboardDoneBar />
       </View>
     </Modal>
   );

@@ -1,7 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  KeyboardAvoidingView,
   Modal,
   Platform,
   Pressable,
@@ -16,15 +15,12 @@ import { addDays, formatTime, fromDayKey, shortDate, type DayKey } from '../date
 import { healthAvailable, readRecentRuns, requestHealthAccess } from '../fueling/health';
 import {
   dayCrossTraining,
-  distanceSource,
   healthWindow,
   mergeDayKm,
   withHealthWeeks,
   type DayXt,
-  type HealthXt,
 } from '../fueling/healthDays';
 import {
-  crossTrainingKcal,
   dayTargets,
   loggedEnergyAvailability,
   type DayTargets,
@@ -44,9 +40,10 @@ import {
 } from '../fueling/training';
 import { calories, isEmpty, sumDay, type Log, type Totals } from '../storage';
 import { formatNumber, MACROS, useTheme } from '../theme';
-import { MileageWheel } from './MileageWheel';
+import { Dropdown, range as optionRange } from './Dropdown';
 import { RunnerProfileForm } from './RunnerProfileForm';
 import { TrainingWeekEditor } from './TrainingWeekEditor';
+import { KeyboardDoneBar } from './KeyboardDone';
 
 type Props = {
   visible: boolean;
@@ -227,11 +224,9 @@ export function RunnerSheet({ visible, onClose, log, today }: Props) {
           </Pressable>
         </View>
 
-        <KeyboardAvoidingView
-          style={styles.flex}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        >
+        <View style={styles.flex}>
           <ScrollView
+            automaticallyAdjustKeyboardInsets
             contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 32 }]}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
@@ -265,11 +260,8 @@ export function RunnerSheet({ visible, onClose, log, today }: Props) {
                     weeks={planned.weeks}
                     healthWeeks={planned.fromHealth}
                     dayKm={dayKm}
-                    manualKm={runner.dayKm}
-                    healthDays={healthDays}
                     onSetKm={runner.setDayKm}
                     xtFor={xtFor}
-                    healthXt={healthXt}
                     xtKcal={xtKcal}
                     onSetXt={runner.setDayXt}
                   />
@@ -301,7 +293,6 @@ export function RunnerSheet({ visible, onClose, log, today }: Props) {
                     weeks={planned.weeks}
                     dayKm={dayKm}
                     xtKcal={xtKcal}
-                    fromHealth={!!healthDays && Object.keys(healthDays).length > 0}
                   />
                   <ProfileSummary
                     profile={profile}
@@ -342,7 +333,8 @@ export function RunnerSheet({ visible, onClose, log, today }: Props) {
               )}
             </View>
           </ScrollView>
-        </KeyboardAvoidingView>
+        </View>
+        <KeyboardDoneBar />
       </View>
     </Modal>
   );
@@ -356,11 +348,8 @@ function DayTargetsCard({
   weeks,
   healthWeeks,
   dayKm,
-  manualKm,
-  healthDays,
   onSetKm,
   xtFor,
-  healthXt,
   xtKcal,
   onSetXt,
 }: {
@@ -373,13 +362,9 @@ function DayTargetsCard({
   healthWeeks: DayKey[];
   /** Every known distance: hand-set over Apple Health. */
   dayKm: DayKm;
-  /** Just the hand-set ones, to say where a day's distance came from. */
-  manualKm: DayKm;
-  healthDays: Record<DayKey, number> | null;
   onSetKm: (day: DayKey, km: number | null) => void;
   /** A day's cross-training, from whichever source has it. */
   xtFor: (day: DayKey) => DayXt;
-  healthXt: HealthXt | null;
   /** Cross-training energy for the last 7 days, for energy availability. */
   xtKcal: Record<DayKey, number>;
   onSetXt: (day: DayKey, xt: { min: number; effort: number } | null) => void;
@@ -390,21 +375,10 @@ function DayTargetsCard({
   const [offset, setOffset] = useState(0);
   const past = offset < 0;
   useEffect(() => setOffset(0), [today]);
-  // The distance under the wheel while it's turning, in the runner's unit.
-  const [preview, setPreview] = useState<number | null>(null);
   // The reasoning behind the numbers, folded away until asked for.
   const [showWhy, setShowWhy] = useState(false);
-  // Cross-training minutes under the wheel while it turns, and whether the
-  // effort list is open.
-  const [xtPreview, setXtPreview] = useState<number | null>(null);
-  const [effortOpen, setEffortOpen] = useState(false);
 
   const day = addDays(today, offset);
-  useEffect(() => {
-    setPreview(null);
-    setXtPreview(null);
-    setEffortOpen(false);
-  }, [day]);
   const plan = planFor(weeks, day, dayKm, today);
   const found = weekFor(weeks, day);
   const problem = found ? checkWeek(found.week) : null;
@@ -468,47 +442,17 @@ function DayTargetsCard({
   const unit = imperial ? 'mi' : 'km';
   const toUnit = (km: number) => Math.round((imperial ? km / KM_PER_MI : km) * 10) / 10;
   const toKm = (v: number) => (imperial ? v * KM_PER_MI : v);
-  const km = preview !== null ? toKm(preview) : plan.km;
   const xt = xtFor(day);
-  const xtKcalNow =
-    xtPreview === null
-      ? xt.kcal
-      : crossTrainingKcal(
-          profile.weightKg,
-          xtPreview,
-          xt.effort ?? RULES.crossTraining.defaultEffort,
-        );
   const t = dayTargets(
     profile,
-    { type: plan.type, km, crossTrainingKcal: xtKcalNow },
+    { type: plan.type, km: plan.km, crossTrainingKcal: xt.kcal },
     logged?.ea ?? null,
   );
-  const healthHasXt = (healthXt?.[day]?.min ?? 0) > 0;
-  const planHasXt = plannedCrossTraining(weeks, day) !== null;
-
-  const source = distanceSource(day, manualKm, healthDays, today);
-  // What "undo" goes back to: Apple Health's figure where it covers the day,
-  // the plan everywhere else.
-  const underneath = distanceSource(day, {}, healthDays, today);
-
-  const distanceNote =
-    source === 'manual'
-      ? past
-        ? 'The distance you ran this day, as you set it.'
-        : 'Distance you set for this day. The rest of the week’s running days split what’s left.'
-      : source === 'health'
-        ? plan.km > 0
-          ? past
-            ? 'From your runs in Apple Health. Scroll to change it.'
-            : 'Today’s run from Apple Health. The rest of the week’s running days split what’s left.'
-          : 'No run in Apple Health this day, so it counts as 0. Scroll if you ran without recording it.'
-        : past
-          ? 'The plan’s distance for this day. Scroll to what you actually ran — it makes your recent energy availability more accurate.'
-          : plan.type === 'long'
-            ? 'Your long run, from this week’s plan.'
-            : plan.type === 'rest'
-              ? 'Rest day. Scroll if you run anyway.'
-              : null;
+  // The day's distance in the runner's unit, split for the two dropdowns.
+  const tenths = Math.round(toUnit(plan.km) * 10);
+  const wholePart = Math.floor(tenths / 10);
+  const tenthPart = tenths % 10;
+  const setDistance = (whole: number, tenth: number) => onSetKm(day, toKm(whole + tenth / 10));
 
   const grams = { c: t.carbsG, p: t.proteinG, f: t.fatG };
   const eatenToday = sumDay(log[today]);
@@ -538,12 +482,14 @@ function DayTargetsCard({
     );
   }
 
+  // The logged-intake warning lives on the energy availability card instead.
   const warnings = t.warnings
+    .filter((w) => w !== 'loggedReducedEa')
     .map((w) => warningCopy(w, t, logged?.ea ?? null))
     .filter((w): w is string => !!w);
 
   return (
-    <View style={[styles.card, { backgroundColor: c.surface, borderColor: c.border }]}>
+    <View style={[styles.card, styles.raisedCard, { backgroundColor: c.surface, borderColor: c.border }]}>
       {header}
       {borrowed ? (
         <Text style={[styles.why, { color: c.faint }]}>
@@ -561,13 +507,23 @@ function DayTargetsCard({
       <View style={styles.training}>
         <View style={styles.trainingCol}>
           <Text style={[styles.trainingLabel, { color: c.muted }]}>RUN</Text>
-          <View style={styles.wheelRow}>
-            <MileageWheel
-              key={day}
-              value={toUnit(plan.km)}
-              unit={unit}
-              onPreview={setPreview}
-              onCommit={(v) => onSetKm(day, toKm(v))}
+          <View style={styles.pickRow}>
+            <Dropdown
+              key={`whole-${day}`}
+              label={imperial ? 'Miles' : 'Kilometres'}
+              value={wholePart}
+              options={optionRange(0, Math.max(imperial ? 50 : 80, wholePart))}
+              onChange={(w) => setDistance(w, tenthPart)}
+              width={54}
+            />
+            <Text style={[styles.unit, { color: c.faint }]}>.</Text>
+            <Dropdown
+              key={`tenth-${day}`}
+              label="Tenths"
+              value={tenthPart}
+              options={optionRange(0, 9)}
+              onChange={(tn) => setDistance(wholePart, tn)}
+              width={46}
             />
             <Text style={[styles.unit, { color: c.faint }]}>{unit}</Text>
           </View>
@@ -575,53 +531,35 @@ function DayTargetsCard({
         <View style={[styles.trainingDivider, { backgroundColor: c.border }]} />
         <View style={styles.trainingCol}>
           <Text style={[styles.trainingLabel, { color: c.muted }]}>CROSS-TRAINING</Text>
-          <CrossTrainingControls
-            key={day}
-            xt={xt}
-            effortOpen={effortOpen}
-            onToggleEffort={() => setEffortOpen((o) => !o)}
-            onPreview={setXtPreview}
-            onSet={(next) => onSetXt(day, next)}
-          />
-        </View>
-      </View>
-      {effortOpen && xt.min > 0 ? (
-        <EffortPicker
-          value={xt.effort}
-          onPick={(n) => {
-            onSetXt(day, { min: xt.min, effort: n });
-            setEffortOpen(false);
-          }}
-        />
-      ) : null}
-      {distanceNote || source === 'manual' ? (
-        <View style={styles.distanceNote}>
-          <Text style={[styles.distanceNoteText, { color: c.faint }]}>{distanceNote}</Text>
-          {source === 'manual' ? (
-            <Pressable
-              onPress={() => onSetKm(day, null)}
-              hitSlop={10}
-              accessibilityRole="button"
-              accessibilityLabel={
-                underneath === 'health'
-                  ? 'Go back to the distance from Apple Health'
-                  : 'Go back to the planned distance'
+          <View style={styles.pickRow}>
+            <Dropdown
+              key={`min-${day}`}
+              label="Cross-training minutes"
+              value={xt.min}
+              options={optionRange(0, Math.max(XT_MAX_MIN, xt.min))}
+              onChange={(min) =>
+                onSetXt(day, { min, effort: xt.effort ?? RULES.crossTraining.defaultEffort })
               }
-            >
-              <Text style={[styles.reset, { color: c.muted }]}>
-                {underneath === 'health' ? 'Use Health' : 'Use plan'}
-              </Text>
-            </Pressable>
+              width={60}
+            />
+            <Text style={[styles.unit, { color: c.faint }]}>min</Text>
+            {xt.min > 0 ? (
+              <Dropdown
+                key={`effort-${day}`}
+                label="Effort"
+                value={xt.effort ?? 0}
+                display={xt.effort === null ? '–' : undefined}
+                options={optionRange(RULES.crossTraining.minEffort, RULES.crossTraining.maxEffort)}
+                onChange={(effort) => onSetXt(day, { min: xt.min, effort })}
+                width={46}
+              />
+            ) : null}
+          </View>
+          {xt.min > 0 ? (
+            <Text style={[styles.effortCaption, { color: c.faint }]}>effort 1–10</Text>
           ) : null}
         </View>
-      ) : null}
-
-      <CrossTrainingNote
-        xt={xt}
-        healthHas={healthHasXt}
-        planHas={planHasXt}
-        onReset={() => onSetXt(day, null)}
-      />
+      </View>
 
       {/* What the day's training comes to, under the training itself. */}
       <Text style={[styles.dayLabel, styles.dayLabelBelow, { color: c.muted }]}>
@@ -784,141 +722,6 @@ function Compare({
 /** Highest cross-training the minutes wheel offers before it stretches. */
 const XT_MAX_MIN = 300;
 
-/**
- * A day's cross-training: a wheel of whole minutes, like the run's, and its
- * effort beside it once there are minutes. Any change sets the day by hand.
- */
-function CrossTrainingControls({
-  xt,
-  effortOpen,
-  onToggleEffort,
-  onPreview,
-  onSet,
-}: {
-  xt: DayXt;
-  effortOpen: boolean;
-  onToggleEffort: () => void;
-  onPreview: (minutes: number | null) => void;
-  onSet: (next: { min: number; effort: number }) => void;
-}) {
-  const { c } = useTheme();
-  const effort = xt.effort ?? RULES.crossTraining.defaultEffort;
-  return (
-    <View style={styles.wheelRow}>
-      <MileageWheel
-        value={xt.min}
-        unit="min"
-        step={1}
-        max={XT_MAX_MIN}
-        noun="Cross-training"
-        width={52}
-        onPreview={onPreview}
-        onCommit={(min) => onSet({ min, effort })}
-      />
-      <Text style={[styles.unit, { color: c.faint }]}>min</Text>
-      {xt.min > 0 ? (
-        <Pressable
-          onPress={onToggleEffort}
-          hitSlop={6}
-          accessibilityRole="button"
-          accessibilityState={{ expanded: effortOpen }}
-          accessibilityLabel={
-            xt.effort === null ? 'Effort, measured by Apple Health' : `Effort ${effort} of 10`
-          }
-          style={({ pressed }) => [
-            styles.effortBox,
-            { borderColor: effortOpen ? c.macro.c : c.border, opacity: pressed ? 0.6 : 1 },
-          ]}
-        >
-          <View style={styles.effortBoxValue}>
-            <Text style={[styles.effortValue, { color: c.text }]}>
-              {xt.effort === null ? '–' : effort}
-            </Text>
-            <Ionicons name={effortOpen ? 'chevron-up' : 'chevron-down'} size={10} color={c.muted} />
-          </View>
-          <Text style={[styles.effortCaption, { color: c.faint }]}>
-            {xt.effort === null ? 'measured' : 'effort'}
-          </Text>
-        </Pressable>
-      ) : null}
-    </View>
-  );
-}
-
-/** Effort 1–10, dropped down under the day's training. */
-function EffortPicker({ value, onPick }: { value: number | null; onPick: (n: number) => void }) {
-  const { c } = useTheme();
-  const { minEffort, maxEffort } = RULES.crossTraining;
-  const options = Array.from({ length: maxEffort - minEffort + 1 }, (_, k) => minEffort + k);
-  return (
-    <View style={[styles.effortList, { borderColor: c.border, backgroundColor: c.surfaceAlt }]}>
-      <Text style={[styles.effortListLabel, { color: c.muted }]}>
-        Cross-training effort · 1 easy, 10 all-out
-      </Text>
-      <View style={styles.effortOptions}>
-        {options.map((n) => {
-          const on = value === n;
-          return (
-            <Pressable
-              key={n}
-              onPress={() => onPick(n)}
-              accessibilityRole="button"
-              accessibilityState={{ selected: on }}
-              accessibilityLabel={`Effort ${n}`}
-              style={({ pressed }) => [
-                styles.effortOption,
-                {
-                  borderColor: on ? c.macro.c : c.border,
-                  backgroundColor: on ? c.macro.c + '2E' : c.surface,
-                  opacity: pressed ? 0.6 : 1,
-                },
-              ]}
-            >
-              <Text style={[styles.effortValue, { color: on ? c.macro.c : c.text }]}>{n}</Text>
-            </Pressable>
-          );
-        })}
-      </View>
-    </View>
-  );
-}
-
-/** Where Health's cross-training came from, and the way back from a hand edit. */
-function CrossTrainingNote({
-  xt,
-  healthHas,
-  planHas,
-  onReset,
-}: {
-  xt: DayXt;
-  healthHas: boolean;
-  planHas: boolean;
-  onReset: () => void;
-}) {
-  const { c } = useTheme();
-  const kcal = formatNumber(Math.round(xt.kcal));
-  const note =
-    xt.source === 'health'
-      ? xt.effort === null
-        ? `Cross-training from Apple Health: ${kcal} kcal, as it measured them.`
-        : `Cross-training from Apple Health, at a moderate effort.`
-      : null;
-  const canReset = xt.source === 'manual' && (healthHas || planHas || xt.min > 0);
-  if (!note && !canReset) return null;
-  return (
-    <View style={styles.distanceNote}>
-      <Text style={[styles.distanceNoteText, { color: c.faint }]}>{note ?? ''}</Text>
-      {canReset ? (
-        <Pressable onPress={onReset} hitSlop={10} accessibilityRole="button">
-          <Text style={[styles.reset, { color: c.muted }]}>
-            {healthHas ? 'Use Health' : planHas ? 'Use plan' : 'Clear'}
-          </Text>
-        </Pressable>
-      ) : null}
-    </View>
-  );
-}
-
 function LastWeek({
   profile,
   log,
@@ -926,7 +729,6 @@ function LastWeek({
   weeks,
   dayKm,
   xtKcal,
-  fromHealth,
 }: {
   profile: Profile;
   log: Log;
@@ -934,8 +736,6 @@ function LastWeek({
   weeks: ReturnType<typeof useRunner>['weeks'];
   dayKm: DayKm;
   xtKcal: Record<DayKey, number>;
-  /** Whether Apple Health is supplying the recent days' distances. */
-  fromHealth: boolean;
 }) {
   const { c } = useTheme();
   const logged = loggedEnergyAvailability(profile, log, weeks, today, dayKm, xtKcal);
@@ -962,25 +762,18 @@ function LastWeek({
               {status}
             </Text>
           </View>
-          <Text style={[styles.why, { color: c.muted }]}>
-            What you logged over {logged.days} days, minus each day&apos;s running, per kg of
-            fat-free mass. {RULES.ea.adequate}+ is adequate; under {RULES.ea.low} is linked to
-            low energy availability.
-          </Text>
-          <Text style={[styles.why, { color: c.faint }]}>
-            {fromHealth
-              ? 'Each day counts your runs from Apple Health, or a distance you set by hand — step back with the arrow on the card above to change any of them.'
-              : `Each day counts its planned distance unless you set what you actually ran — step back with the arrow on the card above to fix any of the last ${MAX_DAYS_BACK} days.`}
-          </Text>
-          <Text style={[styles.why, { color: c.faint }]}>
-            Only as accurate as what you logged. Today isn&apos;t counted until it&apos;s over.
-          </Text>
+          {logged.ea < RULES.ea.adequate ? (
+            <View style={[styles.warningRow, styles.eaWarning]}>
+              <Ionicons name="information-circle-outline" size={16} color={c.macro.c} />
+              <Text style={[styles.warningText, { color: c.muted }]}>
+                Your recent logging puts energy availability at {logged.ea}, below the{' '}
+                {RULES.ea.adequate} considered adequate.
+              </Text>
+            </View>
+          ) : null}
         </>
       ) : (
-        <Text style={[styles.empty, { color: c.faint }]}>
-          Log food on at least {RULES.loggedEa.minDays} of the last 7 days, with training entered,
-          to see how your actual intake compares.
-        </Text>
+        <Text style={[styles.empty, { color: c.faint }]}>—</Text>
       )}
     </View>
   );
@@ -1013,19 +806,15 @@ function HealthCard({
   const { c } = useTheme();
   const checked = connected && syncedAt !== undefined;
 
-  let body: string;
-  if (!connected) {
-    body =
-      'Fill each day’s mileage and cross-training in from your workouts in Apple Health — Apple Watch, and apps like Garmin Connect or Strava that save them there. Read on this phone only; nothing is sent anywhere.';
-  } else if (!checked) {
-    body = 'Checking Apple Health for your runs…';
-  } else if (visible) {
-    body =
-      'Each of the last 7 days uses your runs and cross-training from Apple Health. A day with no run counts as 0 — step back on the card above and scroll a day to override it.';
-  } else {
-    body =
-      'Macros can’t see any runs in Apple Health from the last 2 months, so it’s using your plan. If you’ve recorded runs, allow access in Settings › Health › Data Access & Devices › Macros, then refresh.';
-  }
+  // Just the state. "No runs found" covers a denied permission too: iOS
+  // never says which it is.
+  const status = !connected
+    ? 'Not connected'
+    : !checked
+      ? 'Connected · checking…'
+      : visible
+        ? 'Connected'
+        : 'Connected · no runs found';
 
   return (
     <View style={[styles.card, { backgroundColor: c.surface, borderColor: c.border }]}>
@@ -1038,7 +827,7 @@ function HealthCard({
           </Text>
         ) : null}
       </View>
-      <Text style={[styles.why, { color: c.muted }]}>{body}</Text>
+      <Text style={[styles.healthStatus, { color: connected ? c.text : c.muted }]}>{status}</Text>
       {error ? <Text style={[styles.why, { color: c.macro.c }]}>{error}</Text> : null}
 
       <View style={styles.healthActions}>
@@ -1193,51 +982,25 @@ const styles = StyleSheet.create({
   },
   noticeTitle: { fontSize: 13, fontWeight: '700' },
   noticeText: { fontSize: 12, fontWeight: '500', lineHeight: 17 },
-  distanceNote: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginTop: 4 },
-  distanceNoteText: { flex: 1, fontSize: 12, fontWeight: '500', lineHeight: 17 },
-  reset: { fontSize: 12, fontWeight: '700', lineHeight: 17 },
   dayLabelBelow: { marginTop: 14 },
   kcalAlone: { marginTop: 2, marginBottom: 6, textAlign: 'center' },
-  training: { flexDirection: 'row', marginTop: 18, marginBottom: 8 },
+  // Above what follows, so an open dropdown floats over the numbers below.
+  // Over the cards below it, for the dropdowns.
+  raisedCard: { zIndex: 20 },
+  training: { flexDirection: 'row', marginTop: 18, marginBottom: 8, zIndex: 10 },
+  pickRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   trainingCol: { flex: 1, alignItems: 'center', gap: 6 },
   trainingLabel: { fontSize: 10, fontWeight: '700', letterSpacing: 0.8 },
   trainingDivider: { width: StyleSheet.hairlineWidth * 2, marginHorizontal: 8 },
-  wheelRow: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 6 },
-  effortBox: {
-    marginLeft: 4,
-    minWidth: 46,
-    paddingVertical: 4,
-    paddingHorizontal: 6,
-    borderRadius: 8,
-    borderWidth: StyleSheet.hairlineWidth * 2,
-    alignItems: 'center',
-  },
-  effortBoxValue: { flexDirection: 'row', alignItems: 'center', gap: 2 },
-  effortValue: { fontSize: 15, fontWeight: '700' },
   effortCaption: { fontSize: 10, fontWeight: '600' },
-  effortList: {
-    marginTop: 10,
-    borderRadius: 12,
-    borderWidth: StyleSheet.hairlineWidth * 2,
-    padding: 10,
-    gap: 8,
-  },
-  effortListLabel: { fontSize: 11, fontWeight: '600' },
-  effortOptions: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  effortOption: {
-    width: 40,
-    height: 30,
-    borderRadius: 8,
-    borderWidth: 1.5,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   warnings: { marginTop: 10, gap: 8 },
   warningRow: { flexDirection: 'row', gap: 6, alignItems: 'flex-start' },
+  eaWarning: { marginTop: 8 },
   warningText: { flex: 1, fontSize: 12, fontWeight: '500', lineHeight: 17 },
   eaRow: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' },
   eaStatus: { fontSize: 13, fontWeight: '700' },
   healthHeader: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  healthStatus: { fontSize: 15, fontWeight: '700', marginTop: 8 },
   healthSynced: { marginLeft: 'auto', fontSize: 11, fontWeight: '600' },
   healthActions: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 12 },
   healthPrimary: { height: 42, paddingHorizontal: 16, borderRadius: 12, justifyContent: 'center' },

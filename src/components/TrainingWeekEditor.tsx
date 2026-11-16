@@ -17,6 +17,8 @@ import {
   type WeekXt,
 } from '../fueling/training';
 import { useTheme } from '../theme';
+import { Dropdown, range as optionRange } from './Dropdown';
+import { DONE_ID } from './KeyboardDone';
 
 type Props = {
   weeks: Weeks;
@@ -54,12 +56,9 @@ export function TrainingWeekEditor({ weeks, today, units, onChange }: Props) {
     effort: Array(7).fill(defaultEffort),
   };
   const showWhole = (n: number) => (n > 0 ? String(n) : '');
-  // Which day's effort list is open, if any.
-  const [effortOpen, setEffortOpen] = useState<number | null>(null);
   useEffect(() => {
     setMileage(show(week.km));
     setLongRun(show(week.longRunKm));
-    setEffortOpen(null);
   }, [viewKey, units]);
 
   const commit = (next: Week) => onChange(viewKey, next);
@@ -75,11 +74,9 @@ export function TrainingWeekEditor({ weeks, today, units, onChange }: Props) {
     const min = xt.min.map((m, j) => (j === i ? (Number.isFinite(n) && n > 0 ? n : 0) : m));
     commit({ ...week, xt: { ...xt, min } });
   };
-  const setXtEffort = (i: number, value: number) => {
+  const setXtEffort = (i: number, value: number) =>
     commit({ ...week, xt: { ...xt, effort: xt.effort.map((e, j) => (j === i ? value : e)) } });
-    setEffortOpen(null);
-  };
-  const efforts = Array.from({ length: maxEffort - minEffort + 1 }, (_, k) => minEffort + k);
+  const efforts = optionRange(minEffort, maxEffort);
   const problem = checkWeek(week);
 
   const rows: { type: Exclude<DayType, 'easy'>; label: string; color: string }[] = [
@@ -198,6 +195,7 @@ export function TrainingWeekEditor({ weeks, today, units, onChange }: Props) {
             const on = xt.min[i] > 0;
             return (
               <TextInput
+                inputAccessoryViewID={DONE_ID}
                 key={i}
                 value={showWhole(xt.min[i])}
                 onChangeText={(v) => setXtMin(i, v.replace(/[^0-9]/g, ''))}
@@ -220,68 +218,27 @@ export function TrainingWeekEditor({ weeks, today, units, onChange }: Props) {
           })}
         </View>
       </View>
-      <View style={styles.chipRow}>
+      {/* Above the hint and the cards below, so an open list floats over them. */}
+      <View style={[styles.chipRow, styles.raised]}>
         <Text style={[styles.rowLabel, { color: c.muted }]}>Effort 1–10</Text>
         <View style={styles.chips}>
-          {WEEKDAY_INITIALS.map((_, i) => {
-            if (!(xt.min[i] > 0)) return <View key={i} style={styles.chipGap} />;
-            const open = effortOpen === i;
-            return (
-              <Pressable
-                key={i}
-                onPress={() => setEffortOpen(open ? null : i)}
-                accessibilityRole="button"
-                accessibilityState={{ expanded: open }}
-                accessibilityLabel={`Cross-training effort, ${WEEKDAY_NAMES[i]}: ${xt.effort[i]}`}
-                style={({ pressed }) => [
-                  styles.chip,
-                  styles.box,
-                  styles.effortBox,
-                  {
-                    borderColor: open ? xtColor : c.border,
-                    opacity: pressed ? 0.6 : 1,
-                  },
-                ]}
-              >
-                <Text style={[styles.effortValue, { color: c.text }]}>{xt.effort[i]}</Text>
-                <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={9} color={c.muted} />
-              </Pressable>
-            );
-          })}
+          {WEEKDAY_INITIALS.map((_, i) =>
+            xt.min[i] > 0 ? (
+              <Dropdown
+                key={`${viewKey}-${i}`}
+                compact
+                width={34}
+                label={`Cross-training effort, ${WEEKDAY_NAMES[i]}`}
+                value={xt.effort[i]}
+                options={efforts}
+                onChange={(n) => setXtEffort(i, n)}
+              />
+            ) : (
+              <View key={i} style={styles.chipGap} />
+            ),
+          )}
         </View>
       </View>
-      {/* The open day's effort, as a list that drops down under the row. */}
-      {effortOpen !== null && xt.min[effortOpen] > 0 ? (
-        <View style={[styles.effortList, { borderColor: c.border, backgroundColor: c.surfaceAlt }]}>
-          <Text style={[styles.effortListLabel, { color: c.muted }]}>
-            {WEEKDAY_NAMES[effortOpen]} effort · 1 easy, 10 all-out
-          </Text>
-          <View style={styles.effortOptions}>
-            {efforts.map((n) => {
-              const on = xt.effort[effortOpen] === n;
-              return (
-                <Pressable
-                  key={n}
-                  onPress={() => setXtEffort(effortOpen, n)}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: on }}
-                  accessibilityLabel={`Effort ${n}`}
-                  style={({ pressed }) => [
-                    styles.effortOption,
-                    {
-                      borderColor: on ? xtColor : c.border,
-                      backgroundColor: on ? xtColor + '2E' : c.surface,
-                      opacity: pressed ? 0.6 : 1,
-                    },
-                  ]}
-                >
-                  <Text style={[styles.effortValue, { color: on ? xtColor : c.text }]}>{n}</Text>
-                </Pressable>
-              );
-            })}
-          </View>
-        </View>
-      ) : null}
 
       <Text style={[styles.hint, { color: c.faint }]}>
         Days you don&apos;t mark are easy days.
@@ -316,6 +273,7 @@ function Field({
     <View style={styles.flex}>
       <Text style={[styles.fieldLabel, { color: c.muted }]}>{label}</Text>
       <TextInput
+        inputAccessoryViewID={DONE_ID}
         value={value}
         onChangeText={(v) => onChange(v.replace(whole ? /[^0-9]/g : /[^0-9.]/g, ''))}
         keyboardType={whole ? 'number-pad' : 'decimal-pad'}
@@ -335,6 +293,8 @@ function Field({
 
 const styles = StyleSheet.create({
   card: {
+    // Above the cards that follow, so an open effort list floats over them.
+    zIndex: 10,
     marginTop: 14,
     borderRadius: 20,
     borderWidth: StyleSheet.hairlineWidth * 2,
@@ -379,25 +339,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   chipGap: { width: 34, height: 26 },
-  effortBox: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 1 },
-  effortValue: { fontSize: 12, fontWeight: '700' },
-  effortList: {
-    marginTop: 8,
-    borderRadius: 12,
-    borderWidth: StyleSheet.hairlineWidth * 2,
-    padding: 10,
-    gap: 8,
-  },
-  effortListLabel: { fontSize: 11, fontWeight: '600' },
-  effortOptions: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  effortOption: {
-    width: 40,
-    height: 30,
-    borderRadius: 8,
-    borderWidth: 1.5,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  raised: { zIndex: 10 },
   headerRow: { marginTop: 14 },
   dayHead: { width: 34, textAlign: 'center', fontSize: 12, fontWeight: '700' },
   divider: { height: StyleSheet.hairlineWidth * 2, marginTop: 14, marginBottom: 2 },

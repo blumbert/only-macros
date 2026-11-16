@@ -7,6 +7,7 @@ import { formatTime } from '../date';
 import { parseMacroInput, sanitizeMacroInput } from '../macroInput';
 import type { Entry } from '../storage';
 import { formatGrams, MACROS, useTheme, type MacroKey } from '../theme';
+import { DONE_ID } from './KeyboardDone';
 
 type Props = {
   entries: Entry[];
@@ -21,6 +22,12 @@ const toDraft = (e: Entry): Draft => ({
   p: e.p ? String(e.p) : '',
   f: e.f ? String(e.f) : '',
 });
+
+/**
+ * Names one row for VoiceOver and automation, e.g. "Granola bar, 3:15 PM" or
+ * "12:45 PM entry". The time keeps two entries of the same food apart.
+ */
+const rowLabel = (entry: Entry) => (entry.name ? `${entry.name}, ${formatTime(entry.at)}` : `${formatTime(entry.at)} entry`);
 
 export function RecentEntries({ entries, onSave, onDelete }: Props) {
   const { c } = useTheme();
@@ -79,6 +86,7 @@ export function RecentEntries({ entries, onSave, onDelete }: Props) {
                     >
                       <Text style={[styles.editLetter, { color: c.macro[m.key] }]}>{m.letter}</Text>
                       <TextInput
+                        inputAccessoryViewID={DONE_ID}
                         value={draft[m.key]}
                         onChangeText={(value) =>
                           setDraft((prev) => ({ ...prev, [m.key]: sanitizeMacroInput(value) }))
@@ -136,7 +144,7 @@ export function RecentEntries({ entries, onSave, onDelete }: Props) {
                       onPress={() => startEdit(entry)}
                       hitSlop={8}
                       accessibilityRole="button"
-                      accessibilityLabel="Edit entry"
+                      accessibilityLabel={`Edit ${rowLabel(entry)}`}
                       style={({ pressed }) => [styles.iconButton, { opacity: pressed ? 0.6 : 1 }]}
                     >
                       <Ionicons name="pencil-outline" size={18} color={c.muted} />
@@ -145,7 +153,7 @@ export function RecentEntries({ entries, onSave, onDelete }: Props) {
                       onPress={() => confirmDelete(entry)}
                       hitSlop={8}
                       accessibilityRole="button"
-                      accessibilityLabel="Delete entry"
+                      accessibilityLabel={`Delete ${rowLabel(entry)}`}
                       style={({ pressed }) => [styles.iconButton, { opacity: pressed ? 0.6 : 1 }]}
                     >
                       <Ionicons name="trash-outline" size={18} color={c.muted} />

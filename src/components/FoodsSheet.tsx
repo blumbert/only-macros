@@ -1,7 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
 import {
-  KeyboardAvoidingView,
   Modal,
   Platform,
   Pressable,
@@ -21,6 +20,8 @@ import { calories, MAX_NAME } from '../storage';
 import { formatGrams, formatNumber, MACROS, useTheme, type MacroKey } from '../theme';
 import { EMPTY_MACRO_DRAFT, MacroInputs, toMacroDraft, type MacroDraft } from './MacroInputs';
 import { ScanButtons } from './ScanButtons';
+import { DONE_ID } from './KeyboardDone';
+import { KeyboardDoneBar } from './KeyboardDone';
 
 type Props = {
   visible: boolean;
@@ -59,11 +60,9 @@ export function FoodsSheet({ visible, onClose, foods }: Props) {
           </Pressable>
         </View>
 
-        <KeyboardAvoidingView
-          style={styles.flex}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        >
+        <View style={styles.flex}>
           <ScrollView
+            automaticallyAdjustKeyboardInsets
             contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 32 }]}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
@@ -141,7 +140,8 @@ export function FoodsSheet({ visible, onClose, foods }: Props) {
               )}
             </View>
           </ScrollView>
-        </KeyboardAvoidingView>
+        </View>
+        <KeyboardDoneBar />
       </View>
     </Modal>
   );
@@ -220,6 +220,7 @@ function FoodForm({
         {food ? 'EDIT FOOD' : 'NEW FOOD'}
       </Text>
       <TextInput
+        inputAccessoryViewID={DONE_ID}
         value={name}
         onChangeText={setName}
         placeholder="Name"
@@ -237,6 +238,7 @@ function FoodForm({
       </Text>
       <MacroInputs draft={draft} onChange={setDraft} labelPrefix="Per serving" missing={missing} />
       <TextInput
+        inputAccessoryViewID={DONE_ID}
         value={serving}
         onChangeText={setServing}
         placeholder="Serving size (optional), e.g. 1 bar"
