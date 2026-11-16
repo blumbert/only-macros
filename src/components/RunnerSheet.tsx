@@ -1021,8 +1021,15 @@ const styles = StyleSheet.create({
   // Over the cards below it, for the dropdowns.
   raisedCard: { zIndex: 20 },
   training: { flexDirection: 'row', marginTop: 18, marginBottom: 8, zIndex: 10 },
-  pickRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 4, rowGap: 6 },
-  trainingCol: { flex: 1, alignItems: 'flex-start', gap: 10 },
+  pickRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexWrap: 'wrap',
+    gap: 4,
+    rowGap: 6,
+  },
+  trainingCol: { flex: 1, alignItems: 'center', gap: 10 },
   minutesBox: {
     width: 44,
     height: 34,
