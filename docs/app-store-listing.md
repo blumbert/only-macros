@@ -2,7 +2,7 @@
 
 The product page text. Each section below goes into the App Store Connect field
 of the same name. The limits are Apple's; recount after any edit (as written:
-name 25, subtitle 23, promotional text 157, keywords 98, description 2,773).
+name 25, subtitle 28, promotional text 157, keywords 95, description 2,773).
 
 Premium is an auto-renewable subscription, so Guideline 3.1.2 requires the
 description to keep its Terms of Use and Privacy Policy links (the last lines).
@@ -40,7 +40,11 @@ and "macro" in the keywords.
 
 ## Subtitle (30 max)
 
-Track macros in seconds
+Protein, Carbs & Fat Counter
+
+From 1.0.9 (1.0.8 has "Track macros in seconds"). The macro words people
+search for count for more here than in the keywords, and "Easy" in the name
+already says it is quick.
 
 ## Promotional text (170 max — can be changed any time, without review)
 
@@ -48,7 +52,7 @@ New: Runner fueling. Daily carb, protein and fat targets built around your goal 
 
 ## Keywords (100 max — comma-separated, no spaces; words in the name and subtitle are already indexed, so they're not repeated here)
 
-protein,carb,fat,counter,calorie,macro,iifym,nutrition,label,scanner,food,log,diet,runner,cut,bulk
+calorie,macro,iifym,nutrition,label,scanner,food,log,diet,runner,cut,bulk,keto,meal,gym,fitness
 
 ## Description (4,000 max — only the first three lines show before "more", so they carry the page)
 
@@ -70,13 +74,13 @@ A calendar shows every day's macros and calories, with your monthly average. Mis
 RUNNER FUELING
 Training for a race? Get daily calorie and macro targets that move with your mileage — more carbs on long-run and workout days — built on published sports-nutrition research. Connect Apple Health and each day fills in with how far you actually ran, from Apple Watch or any app that saves runs to Health; or scroll to the miles yourself. It won't set a calorie deficit when there are warning signs of under-fuelling.
 
-PREMIUM: SEARCH WITH AI
-No label handy? Describe what you ate in your own words — "half a quart of cookie dough ice cream from the farm stand" — and AI looks up the product's nutrition label, or estimates from similar products when it can't find one, and works out the servings for you. Every estimate lands in the same editable form as a scanned label, with where it came from, so you can check it before you add it.
+PREMIUM: SMART SEARCH
+No label handy? Describe what you ate in your own words — "half a quart of cookie dough ice cream from the farm stand" — and Smart Search looks up the product's nutrition label, or estimates from similar products when it can't find one, and works out the servings for you. Every estimate lands in the same editable form as a scanned label, with where it came from, so you can check it before you add it.
 
-Premium is an optional subscription that unlocks AI food search (60 searches a month) and Runner fueling. Logging, label scanning, saved foods and the calendar are free, with no ads. If you used Runner fueling before Premium, it stays free for you.
+Premium is an optional subscription that unlocks Smart Search (60 searches a month) and Runner fueling. Logging, label scanning, saved foods and the calendar are free, with no ads. If you used Runner fueling before Premium, it stays free for you.
 
 PRIVATE BY DESIGN
-No account. No ads. No tracking. Your log, your runner profile and your label photos never leave your phone. AI search sends only the words you type, to look up the food.
+No account. No ads. No tracking. Your log, your runner profile and your label photos never leave your phone. Smart Search sends only the words you type to an AI service, to look up the food.
 
 Built for people who already know their numbers — lifters, runners, flexible dieters, and anyone following macros from a coach.
 

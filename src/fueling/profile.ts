@@ -2,8 +2,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useCallback, useEffect, useState } from 'react';
 
 import { isDayKey, type DayKey } from '../date';
+import type { HealthXt, ManualXt } from './healthDays';
 import type { BoneHistory, Cycle, Goal, Profile, Sex } from './model';
-import type { DayType } from './rules';
+import { RULES, type DayType } from './rules';
 import type { DayKm, Week, Weeks } from './training';
 
 /** How distances and weight are shown and typed. Storage is always km and kg. */
@@ -15,6 +16,8 @@ export type RunnerState = {
   weeks: Weeks;
   /** Distances set for single days, overriding the week's plan for that day. */
   dayKm: DayKm;
+  /** Cross-training set for single days, overriding Apple Health's. */
+  dayXt: ManualXt;
   health: HealthState;
 };
 
@@ -25,6 +28,8 @@ export type RunnerState = {
 export type HealthState = {
   connected: boolean;
   days: Record<DayKey, number>;
+  /** Cross-training (every non-running workout) by day, from the last sync. */
+  xt?: HealthXt;
   syncedAt?: number;
 };
 
@@ -37,6 +42,7 @@ const EMPTY: RunnerState = {
   units: 'imperial',
   weeks: {},
   dayKm: {},
+  dayXt: {},
   health: NO_HEALTH,
 };
 
@@ -74,11 +80,24 @@ function sanitizeWeek(raw: unknown): Week | null {
   if (!raw || typeof raw !== 'object') return null;
   const r = raw as Record<string, unknown>;
   if (!Array.isArray(r.days) || r.days.length !== 7) return null;
-  return {
+  const week: Week = {
     km: positive(r.km) ?? 0,
     longRunKm: positive(r.longRunKm) ?? 0,
     days: r.days.map((d) => oneOf(d, DAY_TYPES, 'easy')),
   };
+  const x = r.xt && typeof r.xt === 'object' ? (r.xt as Record<string, unknown>) : null;
+  if (x && Array.isArray(x.min) && x.min.length === 7) {
+    const { minEffort, maxEffort, defaultEffort } = RULES.crossTraining;
+    const efforts = Array.isArray(x.effort) && x.effort.length === 7 ? x.effort : [];
+    week.xt = {
+      min: x.min.map((m) => Math.round(positive(m) ?? 0)),
+      effort: Array.from({ length: 7 }, (_, i) => {
+        const e = positive(efforts[i]) ?? defaultEffort;
+        return Math.min(Math.max(Math.round(e), minEffort), maxEffort);
+      }),
+    };
+  }
+  return week;
 }
 
 /** Kilometres keyed by date. Zero is a real answer — a skipped run, a day off. */
@@ -89,6 +108,33 @@ function sanitizeDayKm(raw: unknown): DayKm {
     if (isDayKey(key) && typeof value === 'number' && Number.isFinite(value) && value >= 0) {
       out[key] = value;
     }
+  }
+  return out;
+}
+
+function sanitizeXt(raw: unknown): HealthXt {
+  const out: HealthXt = {};
+  if (!raw || typeof raw !== 'object') return out;
+  for (const [key, value] of Object.entries(raw as Record<string, unknown>)) {
+    if (!isDayKey(key) || !value || typeof value !== 'object') continue;
+    const v = value as Record<string, unknown>;
+    const min = positive(v.min);
+    if (min) out[key] = { min, kcal: positive(v.kcal) ?? 0 };
+  }
+  return out;
+}
+
+/** Zero minutes is a real answer (no cross-training that day), as with distance. */
+function sanitizeManualXt(raw: unknown): ManualXt {
+  const out: ManualXt = {};
+  if (!raw || typeof raw !== 'object') return out;
+  const { minEffort, maxEffort, defaultEffort } = RULES.crossTraining;
+  for (const [key, value] of Object.entries(raw as Record<string, unknown>)) {
+    if (!isDayKey(key) || !value || typeof value !== 'object') continue;
+    const v = value as Record<string, unknown>;
+    if (typeof v.min !== 'number' || !Number.isFinite(v.min) || v.min < 0) continue;
+    const e = typeof v.effort === 'number' && Number.isFinite(v.effort) ? v.effort : defaultEffort;
+    out[key] = { min: v.min, effort: Math.min(Math.max(Math.round(e), minEffort), maxEffort) };
   }
   return out;
 }
@@ -110,9 +156,11 @@ function sanitize(raw: unknown): RunnerState {
     units: oneOf<Units>(r.units, ['imperial', 'metric'], 'imperial'),
     weeks,
     dayKm: sanitizeDayKm(r.dayKm),
+    dayXt: sanitizeManualXt(r.dayXt),
     health: {
       connected: h.connected === true,
       days: sanitizeDayKm(h.days),
+      xt: sanitizeXt(h.xt),
       ...(positive(h.syncedAt) ? { syncedAt: positive(h.syncedAt)! } : {}),
     },
   };
@@ -153,6 +201,7 @@ export function useRunner() {
         units: current.profile ? current.units : stored.units,
         weeks: { ...stored.weeks, ...current.weeks },
         dayKm: { ...stored.dayKm, ...current.dayKm },
+        dayXt: { ...stored.dayXt, ...current.dayXt },
         health: current.health.syncedAt ? current.health : stored.health,
       }));
       setHydrated(true);
@@ -184,9 +233,19 @@ export function useRunner() {
     });
   }, []);
 
+  /** Cross-training for one day; `null` goes back to Apple Health's. */
+  const setDayXt = useCallback((day: DayKey, xt: { min: number; effort: number } | null) => {
+    setState((prev) => {
+      const dayXt = { ...prev.dayXt };
+      if (xt === null) delete dayXt[day];
+      else dayXt[day] = xt;
+      return { ...prev, dayXt };
+    });
+  }, []);
+
   const setHealth = useCallback((health: HealthState) => {
     setState((prev) => ({ ...prev, health }));
   }, []);
 
-  return { ...state, hydrated, setProfile, setWeek, setDayKm, setHealth };
+  return { ...state, hydrated, setProfile, setWeek, setDayKm, setDayXt, setHealth };
 }

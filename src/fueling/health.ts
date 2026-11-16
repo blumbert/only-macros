@@ -1,7 +1,14 @@
 import { Platform, TurboModuleRegistry } from 'react-native';
 
 import { addDays, fromDayKey, type DayKey } from '../date';
-import { healthWindow, runKmByDay, type HealthRun } from './healthDays';
+import {
+  crossTrainingByDay,
+  healthWindow,
+  runKmByDay,
+  type HealthRun,
+  type HealthWorkout,
+  type HealthXt,
+} from './healthDays';
 import { RULES } from './rules';
 
 // Apple Health, read on the phone. Nothing here touches the network: HealthKit
@@ -16,7 +23,8 @@ import { RULES } from './rules';
 // API checked against @kingstinct/react-native-healthkit 14.0.2's own types:
 // requestAuthorization({ toRead }), queryWorkoutSamples({ filter, limit,
 // ascending }), filter { workoutActivityType, date: { startDate, endDate } },
-// and totalDistance reported natively as { unit: 'meters', quantity }.
+// totalDistance reported natively as { unit: 'meters', quantity }, duration
+// as { unit: 's' } and totalEnergyBurned as { unit: 'kcal' }.
 
 /** HKWorkoutActivityType.running in the library's generated enum. */
 const RUNNING = 37;
@@ -76,32 +84,62 @@ const toMeters = (q: { unit?: string; quantity?: number } | undefined): number =
   }
 };
 
+/**
+ * Runs, and cross-training (every other kind of workout). `visible` is about
+ * runs only; cross-training comes back either way.
+ */
 export type HealthRead =
-  | { visible: true; days: Record<DayKey, number> }
-  | { visible: false };
+  | { visible: true; days: Record<DayKey, number>; xt: HealthXt }
+  | { visible: false; xt: HealthXt };
+
+const toMinutes = (q: { unit?: string; quantity?: number } | undefined): number => {
+  if (!q || typeof q.quantity !== 'number' || q.quantity <= 0) return 0;
+  const unit = (q.unit ?? '').toLowerCase();
+  if (unit === 's') return q.quantity / 60;
+  if (unit === 'min') return q.quantity;
+  if (unit === 'hr' || unit === 'h') return q.quantity * 60;
+  return 0;
+};
+
+const toKcal = (q: { unit?: string; quantity?: number } | undefined): number => {
+  if (!q || typeof q.quantity !== 'number' || q.quantity <= 0) return 0;
+  const unit = (q.unit ?? '').toLowerCase();
+  if (unit === 'kcal' || unit === 'cal') return q.quantity;
+  if (unit === 'kj') return q.quantity / 4.184;
+  return 0;
+};
 
 /**
  * Kilometres run on each of the last 7 days and today, from every running
- * workout in Health — Apple Watch, and any app that saves its runs there.
+ * workout in Health — Apple Watch, and any app that saves its runs there —
+ * and the cross-training on those days, from every other workout.
  */
 export async function readRecentRuns(today: DayKey): Promise<HealthRead> {
   const hk = healthKit();
   if (!hk) throw new Error('Apple Health isn’t available on this device.');
-  const workouts: any[] = await hk.queryWorkoutSamples({
-    filter: {
-      workoutActivityType: RUNNING,
-      date: { startDate: fromDayKey(addDays(today, -VISIBILITY_DAYS)), endDate: new Date() },
-    },
-    limit: 0,
-    ascending: true,
-  });
-  if (!workouts?.length) return { visible: false };
+  const all: any[] =
+    (await hk.queryWorkoutSamples({
+      filter: {
+        date: { startDate: fromDayKey(addDays(today, -VISIBILITY_DAYS)), endDate: new Date() },
+      },
+      limit: 0,
+      ascending: true,
+    })) ?? [];
+  const startOf = (w: any) => (w.startDate instanceof Date ? w.startDate : new Date(w.startDate));
+  const covered = healthWindow(today, RULES.loggedEa.lookbackDays);
+  const others: HealthWorkout[] = all
+    .filter((w) => w.workoutActivityType !== RUNNING)
+    .map((w) => ({
+      start: startOf(w),
+      minutes: toMinutes(w.duration),
+      kcal: toKcal(w.totalEnergyBurned),
+    }));
+  const xt = crossTrainingByDay(others, covered);
+  const workouts = all.filter((w) => w.workoutActivityType === RUNNING);
+  if (!workouts.length) return { visible: false, xt };
   const runs: HealthRun[] = workouts.map((w) => ({
-    start: w.startDate instanceof Date ? w.startDate : new Date(w.startDate),
+    start: startOf(w),
     meters: toMeters(w.totalDistance),
   }));
-  return {
-    visible: true,
-    days: runKmByDay(runs, healthWindow(today, RULES.loggedEa.lookbackDays)),
-  };
+  return { visible: true, days: runKmByDay(runs, covered), xt };
 }

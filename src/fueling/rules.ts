@@ -23,6 +23,8 @@ export const SOURCES = {
   cunningham1980:
     'Cunningham (1980). A reanalysis of the factors influencing basal metabolic rate in normal adults. Am J Clin Nutr.',
   margaria1963: 'Margaria et al. (1963). Energy cost of running. J Appl Physiol.',
+  ainsworth2011:
+    'Ainsworth et al. (2011). 2011 Compendium of Physical Activities. Med Sci Sports Exerc.',
 } as const;
 
 export const RULES = {
@@ -38,6 +40,17 @@ export const RULES = {
    * [margaria1963]
    */
   runningKcalPerKgKm: 0.9,
+
+  /**
+   * Net energy cost of cross-training typed in by hand, kcal per kg per hour
+   * for each point of effort on a 1–10 scale: 1 is about 2 METs (easy
+   * walking), 5 about 6 (steady cycling, swimming, the elliptical) and 10
+   * about 11 (hard rowing, racing on the bike), less the 1 MET of resting.
+   * The straight line is judgement, fitted to the Compendium's values.
+   * Workouts from Apple Health use their own measured energy instead.
+   * [ainsworth2011]
+   */
+  crossTraining: { kcalPerKgHourPerEffort: 1, defaultEffort: 5, minEffort: 1, maxEffort: 10 },
 
   /**
    * Body fat assumed when none is entered — typical of trained distance

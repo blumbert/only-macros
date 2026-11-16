@@ -49,6 +49,8 @@ export type DayTargets = {
   fatG: number;
   /** Estimated running energy for the day. */
   runningKcal: number;
+  /** Cross-training energy for the day. */
+  crossTrainingKcal: number;
   /** Energy availability at the target, kcal per kg fat-free mass. */
   ea: number;
   deficitApplied: boolean;
@@ -65,6 +67,17 @@ export function fatFreeMass(p: Profile): number {
 
 export function runningKcal(weightKg: number, km: number): number {
   return RULES.runningKcalPerKgKm * weightKg * Math.max(km, 0);
+}
+
+/** Net energy of cross-training typed in by hand: minutes at an effort of 1–10. */
+export function crossTrainingKcal(
+  weightKg: number,
+  minutes: number,
+  effort: number = RULES.crossTraining.defaultEffort,
+): number {
+  const { kcalPerKgHourPerEffort, minEffort, maxEffort } = RULES.crossTraining;
+  const e = Math.min(Math.max(effort, minEffort), maxEffort);
+  return (kcalPerKgHourPerEffort * e * weightKg * Math.max(minutes, 0)) / 60;
 }
 
 /** Everything but training: resting rate scaled up for daily life. */
@@ -105,12 +118,15 @@ export function profileGuards(p: Profile, loggedEa: number | null) {
 
 export function dayTargets(
   p: Profile,
-  day: { type: DayType; km: number },
+  day: { type: DayType; km: number; crossTrainingKcal?: number },
   loggedEa: number | null = null,
 ): DayTargets {
   const ffm = fatFreeMass(p);
   const running = runningKcal(p.weightKg, day.km);
-  const maintenance = baseKcal(p) + running;
+  const crossTraining = Math.max(day.crossTrainingKcal ?? 0, 0);
+  // All of the day's training, which is what energy availability takes out.
+  const exercise = running + crossTraining;
+  const maintenance = baseKcal(p) + exercise;
   const { blocks, warnings } = profileGuards(p, loggedEa);
 
   const goal: Goal = p.goal === 'lose' && blocks.length ? 'maintain' : p.goal;
@@ -124,7 +140,7 @@ export function dayTargets(
     // With today's rules this can't trip — base energy alone keeps a capped
     // deficit above the threshold — but the check stays so that changing a
     // number in RULES can never quietly produce a day below it.
-    if ((candidate - running) / ffm >= RULES.ea.low) {
+    if ((candidate - exercise) / ffm >= RULES.ea.low) {
       kcal = candidate;
       deficitApplied = true;
     }
@@ -149,7 +165,7 @@ export function dayTargets(
   }
   if (fatKcal < RULES.fatShare.min * kcal - 0.5) warnings.push('fatBelowFloor');
 
-  const ea = (kcal - running) / ffm;
+  const ea = (kcal - exercise) / ffm;
   if (ea < RULES.ea.adequate) warnings.push('reducedEa');
 
   return {
@@ -159,6 +175,7 @@ export function dayTargets(
     carbsG: Math.round(carbsG),
     fatG: Math.round(Math.max(fatKcal, 0) / 9),
     runningKcal: Math.round(running),
+    crossTrainingKcal: Math.round(crossTraining),
     ea: Math.round(ea * 10) / 10,
     deficitApplied,
     goal,
@@ -170,7 +187,7 @@ export function dayTargets(
 /**
  * Energy availability from what was actually eaten over the last week, using
  * each day's own running from the training weeks (or the distance set for that
- * day, when there is one). Today is left out because
+ * day, when there is one) and its cross-training. Today is left out because
  * it isn't finished, and days with nothing logged are skipped rather than read
  * as zero — the same rules the calendar's monthly average follows. Too few
  * logged days and there's nothing meaningful to say, so it returns null.
@@ -181,6 +198,7 @@ export function loggedEnergyAvailability(
   weeks: Weeks,
   today: DayKey,
   dayKm: DayKm = {},
+  crossTrainingKcalByDay: Record<DayKey, number> = {},
 ): { ea: number; days: number } | null {
   const ffm = fatFreeMass(p);
   const start = fromDayKey(today);
@@ -193,7 +211,8 @@ export function loggedEnergyAvailability(
     const intake = calories(sumDay(log[key]));
     const plan = planFor(weeks, key, dayKm, today);
     if (intake <= 0 || !plan) continue;
-    total += (intake - runningKcal(p.weightKg, plan.km)) / ffm;
+    const exercise = runningKcal(p.weightKg, plan.km) + (crossTrainingKcalByDay[key] ?? 0);
+    total += (intake - exercise) / ffm;
     days++;
   }
   if (days < RULES.loggedEa.minDays) return null;

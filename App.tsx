@@ -154,7 +154,7 @@ function Screen() {
     { key: 'label', label: 'Scan a label', icon: 'scan-outline', onPress: () => setPage('label') },
     {
       key: 'search',
-      label: 'Search with AI',
+      label: 'Smart Search',
       icon: 'sparkles-outline',
       badge: searchUnlocked ? undefined : 'Premium',
       onPress: () => setPage(searchUnlocked ? 'search' : 'premium'),
@@ -226,8 +226,24 @@ function Screen() {
               <Text style={[styles.title, { color: c.text }]}>Macros</Text>
               <Text style={[styles.subtitle, { color: c.muted }]}>{longDate(today)}</Text>
             </View>
-            {/* Runner fueling also gets its own button, so going back and
-                forth from the main screen is one tap instead of two. */}
+            {/* Scanning a label and Runner fueling also get their own buttons,
+                so each is one tap from the main screen instead of two. */}
+            <Pressable
+              onPress={() => {
+                Keyboard.dismiss();
+                setPage('label');
+              }}
+              hitSlop={10}
+              accessibilityRole="button"
+              accessibilityLabel="Scan a label"
+              style={({ pressed }) => [
+                styles.menuButton,
+                styles.headerGap,
+                { backgroundColor: c.surface, borderColor: c.border, opacity: pressed ? 0.6 : 1 },
+              ]}
+            >
+              <Ionicons name="scan-outline" size={20} color={c.text} />
+            </Pressable>
             <Pressable
               onPress={() => {
                 Keyboard.dismiss();
@@ -238,7 +254,7 @@ function Screen() {
               accessibilityLabel="Runner fueling"
               style={({ pressed }) => [
                 styles.menuButton,
-                styles.runnerButton,
+                styles.headerGap,
                 { backgroundColor: c.surface, borderColor: c.border, opacity: pressed ? 0.6 : 1 },
               ]}
             >
@@ -404,7 +420,7 @@ const styles = StyleSheet.create({
     paddingBottom: 18,
   },
   headerText: { flexShrink: 1, marginRight: 'auto' },
-  runnerButton: { marginRight: 10 },
+  headerGap: { marginRight: 10 },
   title: { fontSize: 30, fontWeight: '800', letterSpacing: -0.6 },
   subtitle: { fontSize: 14, fontWeight: '600', marginTop: 2 },
   menuButton: {

@@ -28,11 +28,11 @@ const round1 = (n: unknown) => (typeof n === 'number' && Number.isFinite(n) && n
 
 export async function aiSearch(query: string): Promise<AiSearchResult> {
   if (!AI_SEARCH_URL) {
-    return { ok: false, reason: 'unavailable', message: 'AI search isn’t set up in this build yet.' };
+    return { ok: false, reason: 'unavailable', message: 'Smart Search isn’t set up in this build yet.' };
   }
   const id = await appUserId();
   if (!id) {
-    return { ok: false, reason: 'not_subscribed', message: 'AI search is part of Premium.' };
+    return { ok: false, reason: 'not_subscribed', message: 'Smart Search is part of Premium.' };
   }
 
   const controller = new AbortController();
@@ -49,7 +49,7 @@ export async function aiSearch(query: string): Promise<AiSearchResult> {
     return {
       ok: false,
       reason: 'offline',
-      message: 'Couldn’t reach AI search. Check your connection and try again.',
+      message: 'Couldn’t reach Smart Search. Check your connection and try again.',
     };
   } finally {
     clearTimeout(timer);
@@ -82,12 +82,12 @@ export async function aiSearch(query: string): Promise<AiSearchResult> {
 
   switch (body?.error) {
     case 'not_subscribed':
-      return { ok: false, reason: 'not_subscribed', message: 'AI search is part of Premium.' };
+      return { ok: false, reason: 'not_subscribed', message: 'Smart Search is part of Premium.' };
     case 'limit':
       return {
         ok: false,
         reason: 'limit',
-        message: `You’ve used all ${body.limit} AI searches this month. They reset on the 1st.`,
+        message: `You’ve used all ${body.limit} smart searches this month. They reset on the 1st.`,
       };
     case 'no_result':
       return {
@@ -96,6 +96,6 @@ export async function aiSearch(query: string): Promise<AiSearchResult> {
         message: 'Couldn’t work that one out. Try naming the brand or the amount, or describe it differently.',
       };
     default:
-      return { ok: false, reason: 'unavailable', message: 'AI search is having trouble right now. Try again in a moment.' };
+      return { ok: false, reason: 'unavailable', message: 'Smart Search is having trouble right now. Try again in a moment.' };
   }
 }

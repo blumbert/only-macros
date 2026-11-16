@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { Platform } from 'react-native';
 import type { CustomerInfo } from 'react-native-purchases';
 
 import { grandfatheredByBuild, loadGrandfathered, rememberGrandfathered } from './grandfather';
@@ -14,6 +15,17 @@ export type PremiumState = {
   /** Re-read the subscription now, e.g. after a purchase or restore. */
   refresh: () => void;
 };
+
+/**
+ * Local web preview only: `?premium=1` on the dev server's URL unlocks
+ * Premium so its pages can be looked at without a subscription. `__DEV__` is
+ * false in every store build, so this can't unlock anything for real users.
+ */
+const previewUnlocked =
+  __DEV__ &&
+  Platform.OS === 'web' &&
+  typeof window !== 'undefined' &&
+  new URLSearchParams(window.location.search).get('premium') === '1';
 
 /**
  * Premium status for the whole app. Rendering never waits on it: everything
@@ -53,5 +65,5 @@ export function usePremium(): PremiumState {
     };
   }, [apply, refresh]);
 
-  return { premium, grandfathered, managementUrl, refresh };
+  return { premium: premium || previewUnlocked, grandfathered, managementUrl, refresh };
 }

@@ -89,7 +89,7 @@ export function AiSearchSheet({ visible, onClose, today, onAdd, foods, onNeedPre
   }, [visible]);
 
   return (
-    <Sheet visible={visible} onClose={onClose} title="Search with AI">
+    <Sheet visible={visible} onClose={onClose} title="Smart Search">
       <FoodEntryForm
         key={opened}
         today={today}
@@ -177,7 +177,7 @@ export function AiSearchSheet({ visible, onClose, today, onAdd, foods, onNeedPre
 
             {usage ? (
               <Text style={[styles.usage, { color: c.faint }]}>
-                {usage.used} of {usage.limit} AI searches used this month
+                {usage.used} of {usage.limit} smart searches used this month
               </Text>
             ) : null}
           </View>

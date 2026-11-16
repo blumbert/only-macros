@@ -11,7 +11,15 @@ export type Week = {
   longRunKm: number;
   /** Index 0 is Sunday. Anything not marked is an easy day. */
   days: DayType[];
+  /**
+   * Cross-training planned for the week, on top of whatever running each day
+   * has: minutes and a 1–10 effort for each day (index 0 is Sunday; 0
+   * minutes for none).
+   */
+  xt?: WeekXt;
 };
+
+export type WeekXt = { min: number[]; effort: number[] };
 
 export type Weeks = Record<DayKey, Week>;
 
@@ -110,6 +118,17 @@ export function weekFor(weeks: Weeks, day: DayKey): { week: Week; key: DayKey; c
     .sort();
   const last = earlier[earlier.length - 1];
   return last ? { week: weeks[last], key: last, carried: true } : null;
+}
+
+/** The cross-training a day's week plans for it, if any. */
+export function plannedCrossTraining(
+  weeks: Weeks,
+  day: DayKey,
+): { min: number; effort: number } | null {
+  const xt = weekFor(weeks, day)?.week.xt;
+  const i = fromDayKey(day).getDay();
+  const min = xt?.min[i] ?? 0;
+  return xt && min > 0 ? { min, effort: xt.effort[i] } : null;
 }
 
 /**

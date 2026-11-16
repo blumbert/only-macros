@@ -4,7 +4,7 @@ import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { addDays, shortDate, WEEKDAY_INITIALS, type DayKey } from '../date';
 import type { Units } from '../fueling/profile';
-import type { DayType } from '../fueling/rules';
+import { RULES, type DayType } from '../fueling/rules';
 import {
   checkWeek,
   EMPTY_WEEK,
@@ -14,6 +14,7 @@ import {
   weekKey,
   type Week,
   type Weeks,
+  type WeekXt,
 } from '../fueling/training';
 import { useTheme } from '../theme';
 
@@ -47,9 +48,18 @@ export function TrainingWeekEditor({ weeks, today, units, onChange }: Props) {
   // change — not when the first keystroke turns a carried week into its own.
   const [mileage, setMileage] = useState(show(week.km));
   const [longRun, setLongRun] = useState(show(week.longRunKm));
+  const { minEffort, maxEffort, defaultEffort } = RULES.crossTraining;
+  const xt: WeekXt = week.xt ?? {
+    min: Array(7).fill(0),
+    effort: Array(7).fill(defaultEffort),
+  };
+  const showWhole = (n: number) => (n > 0 ? String(n) : '');
+  // Which day's effort list is open, if any.
+  const [effortOpen, setEffortOpen] = useState<number | null>(null);
   useEffect(() => {
     setMileage(show(week.km));
     setLongRun(show(week.longRunKm));
+    setEffortOpen(null);
   }, [viewKey, units]);
 
   const commit = (next: Week) => onChange(viewKey, next);
@@ -59,6 +69,17 @@ export function TrainingWeekEditor({ weeks, today, units, onChange }: Props) {
   };
 
   const hasLong = week.days.includes('long');
+  const xtColor = c.macro.c;
+  const setXtMin = (i: number, text: string) => {
+    const n = parseInt(text, 10);
+    const min = xt.min.map((m, j) => (j === i ? (Number.isFinite(n) && n > 0 ? n : 0) : m));
+    commit({ ...week, xt: { ...xt, min } });
+  };
+  const setXtEffort = (i: number, value: number) => {
+    commit({ ...week, xt: { ...xt, effort: xt.effort.map((e, j) => (j === i ? value : e)) } });
+    setEffortOpen(null);
+  };
+  const efforts = Array.from({ length: maxEffort - minEffort + 1 }, (_, k) => minEffort + k);
   const problem = checkWeek(week);
 
   const rows: { type: Exclude<DayType, 'easy'>; label: string; color: string }[] = [
@@ -125,18 +146,30 @@ export function TrainingWeekEditor({ weeks, today, units, onChange }: Props) {
         )}
       </View>
 
+      {/* The days across the top, so every row below reads as a column. */}
+      <View style={[styles.chipRow, styles.headerRow]}>
+        <View style={styles.rowLabel} />
+        <View style={styles.chips}>
+          {WEEKDAY_INITIALS.map((initial, i) => (
+            <Text key={i} style={[styles.dayHead, { color: c.muted }]}>
+              {initial}
+            </Text>
+          ))}
+        </View>
+      </View>
+
       {rows.map((row) => (
         <View key={row.type} style={styles.chipRow}>
           <Text style={[styles.rowLabel, { color: c.muted }]}>{row.label}</Text>
           <View style={styles.chips}>
-            {WEEKDAY_INITIALS.map((initial, i) => {
+            {WEEKDAY_INITIALS.map((_, i) => {
               const on = week.days[i] === row.type;
               return (
                 <Pressable
                   key={i}
                   onPress={() => commit({ ...week, days: setDayType(week.days, i, row.type) })}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: on }}
+                  accessibilityRole="checkbox"
+                  accessibilityState={{ checked: on }}
                   accessibilityLabel={`${row.label}: ${WEEKDAY_NAMES[i]}`}
                   style={({ pressed }) => [
                     styles.chip,
@@ -147,13 +180,108 @@ export function TrainingWeekEditor({ weeks, today, units, onChange }: Props) {
                     },
                   ]}
                 >
-                  <Text style={[styles.chipText, { color: on ? row.color : c.muted }]}>{initial}</Text>
+                  {on ? <Ionicons name="checkmark" size={18} color={row.color} /> : null}
                 </Pressable>
               );
             })}
           </View>
         </View>
       ))}
+
+      {/* Cross-training, under the running: any day can have it, each with
+          its own minutes and effort. Typing minutes plans that day. */}
+      <View style={[styles.divider, { backgroundColor: c.border }]} />
+      <View style={styles.chipRow}>
+        <Text style={[styles.rowLabel, { color: c.muted }]}>Cross-train min</Text>
+        <View style={styles.chips}>
+          {WEEKDAY_INITIALS.map((_, i) => {
+            const on = xt.min[i] > 0;
+            return (
+              <TextInput
+                key={i}
+                value={showWhole(xt.min[i])}
+                onChangeText={(v) => setXtMin(i, v.replace(/[^0-9]/g, ''))}
+                keyboardType="number-pad"
+                inputMode="numeric"
+                maxLength={3}
+                selectTextOnFocus
+                accessibilityLabel={`Cross-training minutes, ${WEEKDAY_NAMES[i]}`}
+                style={[
+                  styles.chip,
+                  styles.box,
+                  {
+                    color: on ? xtColor : c.text,
+                    borderColor: on ? xtColor : c.border,
+                    backgroundColor: on ? xtColor + '2E' : 'transparent',
+                  },
+                ]}
+              />
+            );
+          })}
+        </View>
+      </View>
+      <View style={styles.chipRow}>
+        <Text style={[styles.rowLabel, { color: c.muted }]}>Effort 1–10</Text>
+        <View style={styles.chips}>
+          {WEEKDAY_INITIALS.map((_, i) => {
+            if (!(xt.min[i] > 0)) return <View key={i} style={styles.chipGap} />;
+            const open = effortOpen === i;
+            return (
+              <Pressable
+                key={i}
+                onPress={() => setEffortOpen(open ? null : i)}
+                accessibilityRole="button"
+                accessibilityState={{ expanded: open }}
+                accessibilityLabel={`Cross-training effort, ${WEEKDAY_NAMES[i]}: ${xt.effort[i]}`}
+                style={({ pressed }) => [
+                  styles.chip,
+                  styles.box,
+                  styles.effortBox,
+                  {
+                    borderColor: open ? xtColor : c.border,
+                    opacity: pressed ? 0.6 : 1,
+                  },
+                ]}
+              >
+                <Text style={[styles.effortValue, { color: c.text }]}>{xt.effort[i]}</Text>
+                <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={9} color={c.muted} />
+              </Pressable>
+            );
+          })}
+        </View>
+      </View>
+      {/* The open day's effort, as a list that drops down under the row. */}
+      {effortOpen !== null && xt.min[effortOpen] > 0 ? (
+        <View style={[styles.effortList, { borderColor: c.border, backgroundColor: c.surfaceAlt }]}>
+          <Text style={[styles.effortListLabel, { color: c.muted }]}>
+            {WEEKDAY_NAMES[effortOpen]} effort · 1 easy, 10 all-out
+          </Text>
+          <View style={styles.effortOptions}>
+            {efforts.map((n) => {
+              const on = xt.effort[effortOpen] === n;
+              return (
+                <Pressable
+                  key={n}
+                  onPress={() => setXtEffort(effortOpen, n)}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: on }}
+                  accessibilityLabel={`Effort ${n}`}
+                  style={({ pressed }) => [
+                    styles.effortOption,
+                    {
+                      borderColor: on ? xtColor : c.border,
+                      backgroundColor: on ? xtColor + '2E' : c.surface,
+                      opacity: pressed ? 0.6 : 1,
+                    },
+                  ]}
+                >
+                  <Text style={[styles.effortValue, { color: on ? xtColor : c.text }]}>{n}</Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        </View>
+      ) : null}
 
       <Text style={[styles.hint, { color: c.faint }]}>
         Days you don&apos;t mark are easy days.
@@ -173,10 +301,15 @@ function Field({
   label,
   value,
   onChange,
+  whole = false,
+  maxLength = 5,
 }: {
   label: string;
   value: string;
   onChange: (v: string) => void;
+  /** Whole numbers only (minutes, effort). */
+  whole?: boolean;
+  maxLength?: number;
 }) {
   const { c } = useTheme();
   return (
@@ -184,12 +317,12 @@ function Field({
       <Text style={[styles.fieldLabel, { color: c.muted }]}>{label}</Text>
       <TextInput
         value={value}
-        onChangeText={(v) => onChange(v.replace(/[^0-9.]/g, ''))}
-        keyboardType="decimal-pad"
-        inputMode="decimal"
+        onChangeText={(v) => onChange(v.replace(whole ? /[^0-9]/g : /[^0-9.]/g, ''))}
+        keyboardType={whole ? 'number-pad' : 'decimal-pad'}
+        inputMode={whole ? 'numeric' : 'decimal'}
         placeholder="0"
         placeholderTextColor={c.faint}
-        maxLength={5}
+        maxLength={maxLength}
         accessibilityLabel={label}
         style={[
           styles.fieldInput,
@@ -235,6 +368,39 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   chipText: { fontSize: 13, fontWeight: '700' },
+  // Minutes and effort: rounded rectangles, set apart from the tap-to-check circles.
+  box: {
+    width: 34,
+    height: 26,
+    borderRadius: 8,
+    padding: 0,
+    textAlign: 'center',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  chipGap: { width: 34, height: 26 },
+  effortBox: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 1 },
+  effortValue: { fontSize: 12, fontWeight: '700' },
+  effortList: {
+    marginTop: 8,
+    borderRadius: 12,
+    borderWidth: StyleSheet.hairlineWidth * 2,
+    padding: 10,
+    gap: 8,
+  },
+  effortListLabel: { fontSize: 11, fontWeight: '600' },
+  effortOptions: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  effortOption: {
+    width: 40,
+    height: 30,
+    borderRadius: 8,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerRow: { marginTop: 14 },
+  dayHead: { width: 34, textAlign: 'center', fontSize: 12, fontWeight: '700' },
+  divider: { height: StyleSheet.hairlineWidth * 2, marginTop: 14, marginBottom: 2 },
   hint: { fontSize: 11, fontWeight: '500', marginTop: 12 },
   error: { fontSize: 13, fontWeight: '600', marginTop: 8 },
 });

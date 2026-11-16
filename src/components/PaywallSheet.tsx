@@ -21,8 +21,8 @@ type Props = {
 const PERKS: { icon: React.ComponentProps<typeof Ionicons>['name']; title: string; body: string }[] = [
   {
     icon: 'sparkles',
-    title: 'AI food search',
-    body: 'Describe anything you ate in your own words and get its macros, from the real label when it can be found. 60 searches a month.',
+    title: 'Smart Search',
+    body: 'Describe anything you ate in your own words and AI finds its macros, from the real label when it can be found. 60 searches a month.',
   },
   {
     icon: 'footsteps',
@@ -71,7 +71,7 @@ export function PaywallSheet({ visible, onClose, premium, managementUrl, onChang
       onChanged();
       if (result.entitled) {
         onClose();
-        Alert.alert('Welcome to Premium', 'AI food search and Runner fueling are unlocked.');
+        Alert.alert('Welcome to Premium', 'Smart Search and Runner fueling are unlocked.');
       } else {
         Alert.alert(
           restoring ? 'Nothing to restore' : 'Not active',

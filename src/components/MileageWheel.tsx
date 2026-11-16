@@ -12,16 +12,22 @@ import {
 import { useTheme } from '../theme';
 
 type Props = {
-  /** Distance in the runner's own unit. */
+  /** Distance in the runner's own unit (or minutes, with `step` 1). */
   value: number;
   unit: string;
+  /** Size of one notch: 0.1 for distance (the default), 1 for minutes. */
+  step?: number;
+  /** Highest value before the wheel stretches to fit a bigger one. */
+  max?: number;
+  /** What's being picked, for screen readers. */
+  noun?: string;
+  width?: number;
   /** Fires as the wheel turns, so the numbers beside it can follow along. */
   onPreview: (value: number | null) => void;
   /** Fires once the wheel settles on a value other than `value`. */
   onCommit: (value: number) => void;
 };
 
-const STEP = 0.1;
 const ROW = 34;
 /** Rows in view: the selected one and one either side. */
 const VISIBLE = 3;
@@ -30,8 +36,6 @@ const SETTLE_MS = 250;
 /** Far enough for an ultra; a value past it stretches the wheel to fit. */
 const MAX: Record<string, number> = { mi: 50, km: 80 };
 
-const toIndex = (v: number) => Math.max(Math.round(v / STEP), 0);
-const label = (i: number) => (i * STEP).toFixed(1);
 
 function buzz() {
   try {
@@ -42,16 +46,30 @@ function buzz() {
 }
 
 /**
- * A picker wheel in tenths of a mile (or km). It's a plain FlatList snapping
+ * A picker wheel in tenths of a mile (or km), or in whole minutes. It's a plain FlatList snapping
  * to rows, padded with a blank row at each end so the first and last values
  * can sit in the middle. Row `i` of the data is value `i - 1`, which makes the
  * scroll offset of value `i` simply `i * ROW`.
  */
-export function MileageWheel({ value, unit, onPreview, onCommit }: Props) {
+export function MileageWheel({
+  value,
+  unit,
+  step = 0.1,
+  max,
+  noun = 'Distance',
+  width = 76,
+  onPreview,
+  onCommit,
+}: Props) {
   const { c } = useTheme();
   const list = useRef<FlatList<number>>(null);
+  const decimals = step < 1 ? 1 : 0;
+  const toIndex = (v: number) => Math.max(Math.round(v / step), 0);
+  const label = (i: number) => (i * step).toFixed(decimals);
+  const toValue = (i: number) => Math.round(i * step * 10) / 10;
   const valueIndex = toIndex(value);
-  const count = Math.max(toIndex(MAX[unit] ?? 50), valueIndex + toIndex(10)) + 1;
+  const ceiling = max ?? MAX[unit] ?? 50;
+  const count = Math.max(toIndex(ceiling), valueIndex + Math.round(10 / step)) + 1;
   const data = useMemo(() => Array.from({ length: count + 2 }, (_, i) => i - 1), [count]);
 
   const [centre, setCentre] = useState(valueIndex);
@@ -85,7 +103,7 @@ export function MileageWheel({ value, unit, onPreview, onCommit }: Props) {
     if (i !== centreRef.current) {
       centreRef.current = i;
       setCentre(i);
-      onPreview(i * STEP);
+      onPreview(toValue(i));
       buzz();
     }
     if (settle.current) clearTimeout(settle.current);
@@ -96,12 +114,12 @@ export function MileageWheel({ value, unit, onPreview, onCommit }: Props) {
         list.current?.scrollToOffset({ offset: chosen * ROW, animated: true });
       }
       onPreview(null);
-      if (chosen !== valueRef.current) onCommit(Math.round(chosen * STEP * 10) / 10);
+      if (chosen !== valueRef.current) onCommit(toValue(chosen));
     }, SETTLE_MS);
   };
 
   return (
-    <View style={[styles.wrap, { height: ROW * VISIBLE }]}>
+    <View style={[styles.wrap, { width, height: ROW * VISIBLE }]}>
       <View
         pointerEvents="none"
         style={[styles.band, { top: ROW, height: ROW, borderColor: c.border }]}
@@ -138,12 +156,12 @@ export function MileageWheel({ value, unit, onPreview, onCommit }: Props) {
         onScroll={onScroll}
         nestedScrollEnabled
         accessibilityRole="adjustable"
-        accessibilityLabel={`Distance, ${label(centre)} ${unit}`}
+        accessibilityLabel={`${noun}, ${label(centre)} ${unit}`}
         accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}
         onAccessibilityAction={(e) => {
           const next = centreRef.current + (e.nativeEvent.actionName === 'increment' ? 1 : -1);
           if (next < 0 || next >= count) return;
-          onCommit(Math.round(next * STEP * 10) / 10);
+          onCommit(toValue(next));
         }}
       />
     </View>
@@ -151,7 +169,7 @@ export function MileageWheel({ value, unit, onPreview, onCommit }: Props) {
 }
 
 const styles = StyleSheet.create({
-  wrap: { width: 76, overflow: 'hidden' },
+  wrap: { overflow: 'hidden' },
   band: {
     position: 'absolute',
     left: 0,
