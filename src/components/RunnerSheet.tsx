@@ -37,7 +37,7 @@ import {
   weekFor,
   type DayKm,
 } from '../fueling/training';
-import { sumDay, type Log } from '../storage';
+import { calories, sumDay, type Log } from '../storage';
 import { formatNumber, MACROS, useTheme } from '../theme';
 import { DoneTextInput } from './DoneTextInput';
 import { Dropdown, range as optionRange } from './Dropdown';
@@ -76,6 +76,11 @@ function dayHeading(day: DayKey, offset: number): string {
 
 /** Logged against a target: green over it, red under it. */
 const OVER_COLOR = '#1F9D55';
+/** The day card's columns: the three macros, then the calories they add up to. */
+const COLUMNS = [
+  ...MACROS.map((m) => ({ key: m.key, letter: m.letter })),
+  { key: 'kcal' as const, letter: 'CAL' },
+];
 const UNDER_COLOR = '#E5484D';
 
 /** The day's type, for the card's heading: "TODAY – REST DAY". */
@@ -476,6 +481,8 @@ function DayTargetsCard({
 
   const grams = { c: t.carbsG, p: t.proteinG, f: t.fatG };
   const eaten = sumDay(log[day]);
+  const targetOf = { ...grams, kcal: calories(grams) };
+  const eatenOf = { ...eaten, kcal: calories(eaten) };
   const range = RULES.carbs[plan.type];
   const carbsPerKg = Math.round((t.carbsG / profile.weightKg) * 10) / 10;
   const proteinPerKg = Math.round((t.proteinG / profile.weightKg) * 10) / 10;
@@ -583,58 +590,52 @@ function DayTargetsCard({
       </View>
 
 
-      <>
-          {/* Just carbs, protein and fat: calories are only what they add up
-              to. "Target" labels the first row; the second is what was logged,
-              today or on a past day. */}
-          <View style={styles.macroRow}>
-            <View style={styles.sideCol} />
-            {MACROS.map((m) => (
-              <View key={m.key} style={styles.macroCol}>
-                <Text style={[styles.macroLetter, { color: c.macro[m.key] }]}>{m.letter}</Text>
-              </View>
-            ))}
+      {/* One heading over the numbers; carbs, protein, fat, then calories. The
+          second row is what was logged that day (so far, for today). */}
+      <Text style={[styles.tvtHead, { color: c.muted }]}>
+        {offset > 0 ? 'Targets (g)' : offset === 0 ? 'Targets vs today (g)' : 'Targets vs logged (g)'}
+      </Text>
+      <View style={styles.macroRow}>
+        {COLUMNS.map((m) => (
+          <View key={m.key} style={styles.macroCol}>
+            <Text style={[styles.macroLetter, { color: m.key === 'kcal' ? c.muted : c.macro[m.key] }]}>
+              {m.letter}
+            </Text>
           </View>
-          <View style={styles.valueRow}>
-            <View style={styles.sideCol}>
-              <Text style={[styles.vsLabel, { color: c.muted }]}>Target (g)</Text>
-            </View>
-            {MACROS.map((m) => (
-              <View key={m.key} style={styles.macroCol}>
-                <Text style={[styles.macroValue, { color: c.text }]}>{grams[m.key]}</Text>
-              </View>
-            ))}
+        ))}
+      </View>
+      <View style={styles.valueRow}>
+        {COLUMNS.map((m) => (
+          <View key={m.key} style={styles.macroCol}>
+            <Text style={[m.key === 'kcal' ? styles.kcalValue : styles.macroValue, { color: c.text }]}>
+              {formatNumber(targetOf[m.key])}
+            </Text>
           </View>
-          {/* What was logged that day (so far, for today), under the target. */}
-          {offset <= 0 ? (
-            <View style={[styles.macroRow, styles.vsRow]}>
-              <View style={styles.sideCol}>
-                <Text style={[styles.vsLabel, { color: c.muted }]}>
-                  {offset === 0 ? 'Today (g)' : 'Logged (g)'}
+        ))}
+      </View>
+      {offset <= 0 ? (
+        <View style={[styles.macroRow, styles.vsRow]}>
+          {COLUMNS.map((m) => {
+            const got = Math.round(eatenOf[m.key]);
+            const diff = got - targetOf[m.key];
+            return (
+              <View key={m.key} style={styles.macroCol}>
+                <Text style={[styles.vsValue, { color: c.muted }]}>
+                  {formatNumber(got)}
+                  {/* Green over the target, red under. */}
+                  {diff !== 0 ? (
+                    <Text style={[styles.diff, { color: diff > 0 ? OVER_COLOR : UNDER_COLOR }]}>
+                      {' '}
+                      {diff > 0 ? '+' : '−'}
+                      {formatNumber(Math.abs(diff))}
+                    </Text>
+                  ) : null}
                 </Text>
               </View>
-              {MACROS.map((m) => (
-                <View key={m.key} style={styles.macroCol}>
-                  <Text style={[styles.vsValue, { color: c.muted }]}>
-                    {formatNumber(Math.round(eaten[m.key]))}
-                    {/* How the day compares with its target: green over, red under. */}
-                    {(() => {
-                      const diff = Math.round(eaten[m.key]) - grams[m.key];
-                      if (diff === 0) return null;
-                      return (
-                        <Text style={[styles.diff, { color: diff > 0 ? OVER_COLOR : UNDER_COLOR }]}>
-                          {' '}
-                          {diff > 0 ? '+' : '−'}
-                          {formatNumber(Math.abs(diff))}
-                        </Text>
-                      );
-                    })()}
-                  </Text>
-                </View>
-              ))}
-            </View>
-          ) : null}
-      </>
+            );
+          })}
+        </View>
+      ) : null}
 
       {t.blocks.length && profile.goal === 'lose' ? (
         <View style={[styles.notice, { backgroundColor: c.surfaceAlt, borderColor: c.border }]}>
@@ -923,8 +924,8 @@ const styles = StyleSheet.create({
   macroCol: { flex: 1, alignItems: 'center' },
   valueRow: { flexDirection: 'row', alignItems: 'baseline' },
   vsRow: { marginTop: 6, alignItems: 'baseline' },
-  sideCol: { width: 70, justifyContent: 'flex-end' },
-  vsLabel: { fontSize: 12, fontWeight: '700' },
+  tvtHead: { fontSize: 12, fontWeight: '700', marginTop: 12 },
+  kcalValue: { fontSize: 22, fontWeight: '800', fontVariant: ['tabular-nums'] },
   diff: { fontSize: 11, fontWeight: '700' },
   vsValue: { fontSize: 18, fontWeight: '700', fontVariant: ['tabular-nums'] },
   macroLetter: { fontSize: 13, fontWeight: '800', letterSpacing: 1, marginBottom: 2 },
