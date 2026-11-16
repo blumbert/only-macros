@@ -192,7 +192,8 @@ function seed() {
     profile: { sex: 'male', age: 32, weightKg: 72, lifestyle: 'onFeet', goal: 'maintain', bone: 'none', boneLongLayoff: false, cycle: 'notApplicable' },
     units: 'imperial',
     weeks: { [key(lastSunday)]: week, [key(sunday)]: week },
-    dayKm: {},
+    // Today's run and cross-training set by hand, so they show as picked (white).
+    dayKm: { [key(today)]: 5 * 1.609344 },
     dayXt: { [key(today)]: { min: 45, effort: 5 } },
   };
 

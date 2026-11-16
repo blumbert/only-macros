@@ -14,6 +14,7 @@ import { addDays, formatTime, fromDayKey, shortDate, type DayKey } from '../date
 import { healthAvailable, readRecentRuns, requestHealthAccess } from '../fueling/health';
 import {
   dayCrossTraining,
+  distanceSource,
   healthWindow,
   mergeDayKm,
   withHealthWeeks,
@@ -270,6 +271,7 @@ export function RunnerSheet({ visible, onClose, log, today }: Props) {
                     weeks={planned.weeks}
                     dayKm={dayKm}
                     manualKm={runner.dayKm}
+                    healthDays={healthDays}
                     onSetKm={runner.setDayKm}
                     xtFor={xtFor}
                     xtKcal={xtKcal}
@@ -357,6 +359,7 @@ function DayTargetsCard({
   weeks,
   dayKm,
   manualKm,
+  healthDays,
   onSetKm,
   xtFor,
   xtKcal,
@@ -371,6 +374,8 @@ function DayTargetsCard({
   dayKm: DayKm;
   /** Distances the runner picked by hand; anything else shows gray. */
   manualKm: DayKm;
+  /** Apple Health's distances; they show white like hand-set ones. */
+  healthDays: Record<DayKey, number> | null;
   onSetKm: (day: DayKey, km: number | null) => void;
   /** A day's cross-training, from whichever source has it. */
   xtFor: (day: DayKey) => DayXt;
@@ -464,7 +469,10 @@ function DayTargetsCard({
   const wholePart = Math.floor(tenths / 10);
   const tenthPart = tenths % 10;
   const setDistance = (whole: number, tenth: number) => onSetKm(day, toKm(whole + tenth / 10));
-  const distancePicked = manualKm[day] !== undefined;
+  // Gray only when the number is the plan's: entered by hand or from Apple
+  // Health, it's real and shows white.
+  const distancePicked = distanceSource(day, manualKm, healthDays, today) !== 'plan';
+  const xtFromPlan = xt.source === 'plan' || xt.source === 'none';
 
   const grams = { c: t.carbsG, p: t.proteinG, f: t.fatG };
   const eaten = sumDay(log[day]);
@@ -539,7 +547,7 @@ function DayTargetsCard({
               key={`min-${day}`}
               // Minutes from the plan or Apple Health show as the gray
               // placeholder until the runner types their own.
-              value={xt.source === 'manual' && xt.min > 0 ? String(xt.min) : ''}
+              value={!xtFromPlan && xt.min > 0 ? String(xt.min) : ''}
               onChangeText={(v) => {
                 const n = parseInt(v.replace(/[^0-9]/g, ''), 10);
                 const min = Number.isFinite(n) ? Math.min(n, XT_MAX_MIN) : 0;
@@ -548,7 +556,7 @@ function DayTargetsCard({
               keyboardType="number-pad"
               inputMode="numeric"
               maxLength={3}
-              placeholder={xt.source === 'manual' ? '0' : String(xt.min)}
+              placeholder={xtFromPlan ? String(xt.min) : '0'}
               placeholderTextColor={c.faint}
               selectTextOnFocus
               maxFontSizeMultiplier={1.2}
@@ -566,7 +574,7 @@ function DayTargetsCard({
               display={xt.min > 0 && xt.effort === null ? '–' : undefined}
               options={optionRange(RULES.crossTraining.minEffort, RULES.crossTraining.maxEffort)}
               onChange={(effort) => onSetXt(day, { min: xt.min, effort })}
-              muted={xt.source !== 'manual'}
+              muted={xtFromPlan}
               width={38}
             />
             <Text style={[styles.unit, { color: c.faint }]}>rpe</Text>
