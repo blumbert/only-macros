@@ -12,7 +12,7 @@ what someone would notice.
 Every change goes out as an App Store release. The app has no update
 mechanism of its own. (Over-the-air updates were tried for 1.0.3 and taken
 back out: `expo-updates` requires declaring Crash Data, and the only network
-use is meant to stay RevenueCat and AI search.)
+use is meant to stay RevenueCat and Smart Search.)
 
 The AI search server (`server/ai-search`) deploys separately with
 `npx wrangler deploy` from that folder, and needs no app release.
@@ -23,6 +23,23 @@ The AI search server (`server/ai-search`) deploys separately with
    — builds, then uploads to App Store Connect. The build lands in TestFlight.
 3. In App Store Connect: new version, select the build, paste What's New from
    below, update the review notes if the app changed, submit for review.
+
+---
+
+## 1.0.9
+
+Submitted 2026-11-16 with build 40, automatic release. Subtitle "Protein, Carbs
+& Fat Counter" and new keywords go live with it.
+
+```
+• A new icon.
+• A scan button on the main screen that opens the camera straight away, with Choose photo right on the camera.
+• Runner fueling: log cross-training on any day, with minutes and effort, or let Apple Health fill it in.
+• Runner fueling: connected Apple Health but haven't entered a plan? Your last 7 days of runs set your targets.
+• Runner fueling: a simpler layout, with your targets and today's totals side by side and how far over or under you are.
+• A Done button on every keyboard.
+• Search with AI is now Smart Search.
+```
 
 ---
 

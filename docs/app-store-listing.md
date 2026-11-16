@@ -88,6 +88,6 @@ Premium is $3.99 a month or $29.99 a year in the US, billed to your Apple accoun
 Terms of Use: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
 Privacy Policy: https://github.com/blumbert/only-macros/blob/main/PRIVACY.md
 
-## What's New in This Version (1.0.8)
+## What's New in This Version (1.0.9)
 
 See `release-notes.md`.
