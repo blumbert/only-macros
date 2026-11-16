@@ -271,6 +271,7 @@ export function RunnerSheet({ visible, onClose, log, today }: Props) {
                 </>
               ) : (
                 <>
+                  <Text style={[styles.sectionTitle, { color: c.text }]}>Daily Targets</Text>
                   <DayTargetsCard
                     profile={profile}
                     units={runner.units}
@@ -286,6 +287,7 @@ export function RunnerSheet({ visible, onClose, log, today }: Props) {
                     xtKcal={xtKcal}
                     onSetXt={runner.setDayXt}
                   />
+                  <Text style={[styles.sectionTitle, { color: c.text }]}>Weekly Plan</Text>
                   <TrainingWeekEditor
                     weeks={runner.weeks}
                     today={today}
@@ -957,6 +959,7 @@ function Signs() {
 }
 
 const styles = StyleSheet.create({
+  sectionTitle: { fontSize: 22, fontWeight: '800', letterSpacing: -0.3, marginTop: 18, marginBottom: 2, paddingHorizontal: 4 },
   sheet: { flex: 1 },
   flex: { flex: 1 },
   sheetHeader: {
