@@ -592,9 +592,13 @@ function DayTargetsCard({
 
       {/* One heading over the numbers; carbs, protein, fat, then calories. The
           second row is what was logged that day (so far, for today). */}
-      <Text style={[styles.tvtHead, { color: c.muted }]}>
-        {offset > 0 ? 'Targets (g)' : offset === 0 ? 'Targets vs today (g)' : 'Targets vs logged (g)'}
-      </Text>
+      {/* Centered over the three macro columns, not the calories. */}
+      <View style={styles.tvtRow}>
+        <Text style={[styles.tvtHead, { color: c.muted }]}>
+          {offset > 0 ? 'Targets (g)' : offset === 0 ? 'Targets vs today (g)' : 'Targets vs logged (g)'}
+        </Text>
+        <View style={styles.macroCol} />
+      </View>
       <View style={styles.macroRow}>
         {COLUMNS.map((m) => (
           <View key={m.key} style={styles.macroCol}>
@@ -924,7 +928,8 @@ const styles = StyleSheet.create({
   macroCol: { flex: 1, alignItems: 'center' },
   valueRow: { flexDirection: 'row', alignItems: 'baseline' },
   vsRow: { marginTop: 6, alignItems: 'baseline' },
-  tvtHead: { fontSize: 12, fontWeight: '700', marginTop: 12 },
+  tvtRow: { flexDirection: 'row', marginTop: 12 },
+  tvtHead: { flex: 3, textAlign: 'center', fontSize: 12, fontWeight: '700' },
   kcalValue: { fontSize: 22, fontWeight: '800', fontVariant: ['tabular-nums'] },
   diff: { fontSize: 11, fontWeight: '700' },
   vsValue: { fontSize: 18, fontWeight: '700', fontVariant: ['tabular-nums'] },
