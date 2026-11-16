@@ -310,34 +310,25 @@ function HowItWorks({ units }: { units: Units }) {
   const body = [styles.howText, { color: c.muted }];
   return (
     <View style={styles.how}>
-      <Text style={head}>Marking your days</Text>
+      <Text style={head}>Your days</Text>
       <Text style={body}>
-        Each day you mark tells the app how hard that day is. Carbs are your
-        body&apos;s main fuel for running, so harder days get more of them:
+        Harder days get more carbs: rest, then easy, then workouts, then the
+        long run. Days you don&apos;t mark are easy days.
       </Text>
-      <Text style={body}>• Rest: the fewest carbs.</Text>
-      <Text style={body}>• Easy: a medium amount. Days you don&apos;t mark are easy days.</Text>
-      <Text style={body}>• Workouts (like speed work or hills): more carbs.</Text>
-      <Text style={body}>• Long run: the most carbs.</Text>
-      <Text style={body}>Protein stays about the same every day.</Text>
+      <Text style={body}>
+        Trying to lose weight? Only rest and easy days get a small cut. Workout
+        and long run days are always fully fueled.
+      </Text>
 
       <Text style={head}>Your {dist}</Text>
       <Text style={body}>
-        The long run gets the {dist} you typed in for it, and rest days get
-        none. Whatever is left of your total {dist} is split evenly across your
-        easy and workout days.
+        The long run gets its own {dist}. The rest of your total is split evenly
+        across your easy and workout days, and shows as each day&apos;s {dist}
+        in Daily Targets.
       </Text>
       <Text style={body}>
-        Each day&apos;s share shows up as that day&apos;s {dist} in Daily
-        Targets. Running farther burns more energy, so more {dist} means higher
-        targets.
-      </Text>
-
-      <Text style={head}>Ran a different distance?</Text>
-      <Text style={body}>
-        Change that day&apos;s {dist} in Daily Targets to what you actually ran.
-        The {dist} left in your week are split again across the days still to
-        come, so the rest of your week stays on track.
+        Ran something different? Change that day&apos;s {dist} in Daily
+        Targets, and the rest of the week adjusts.
       </Text>
     </View>
   );
