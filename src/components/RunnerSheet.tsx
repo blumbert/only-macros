@@ -178,6 +178,17 @@ export function RunnerSheet({ visible, onClose, log, today }: Props) {
       ),
     [runner.dayXt, healthXt, profile, planned.weeks, healthConnected, today],
   );
+  // What a past day came to, for the Weekly Plan card's past weeks: the same
+  // distance and cross-training Daily Targets used for it, which is what was
+  // run whenever it was set by hand or came from Apple Health.
+  const loggedFor = useCallback(
+    (day: DayKey) => {
+      const km = planFor(planned.weeks, day, dayKm, today)?.km ?? dayKm[day] ?? 0;
+      const xt = xtFor(day);
+      return { km, xtMin: xt.min, xtEffort: xt.effort };
+    },
+    [planned.weeks, dayKm, today, xtFor],
+  );
   const xtKcal = useMemo(() => {
     const out: Record<DayKey, number> = {};
     for (const day of healthWindow(today, RULES.loggedEa.lookbackDays)) out[day] = xtFor(day).kcal;
@@ -191,10 +202,13 @@ export function RunnerSheet({ visible, onClose, log, today }: Props) {
     setHealthError(null);
     try {
       const read = await readRecentRuns(today);
+      // Health only reads the last few days, so earlier days are kept from
+      // previous syncs: past weeks show what was actually run.
+      const prev = runner.health;
       setHealth({
         connected: true,
-        days: read.visible ? read.days : {},
-        xt: read.xt,
+        days: read.visible ? { ...prev.days, ...read.days } : {},
+        xt: { ...(prev.xt ?? {}), ...read.xt },
         syncedAt: Date.now(),
       });
     } catch {
@@ -202,7 +216,7 @@ export function RunnerSheet({ visible, onClose, log, today }: Props) {
     } finally {
       setHealthBusy(false);
     }
-  }, [today, setHealth]);
+  }, [today, setHealth, runner.health]);
 
   // Every time the page opens, so the days are as fresh as the runs.
   useEffect(() => {
@@ -293,6 +307,7 @@ export function RunnerSheet({ visible, onClose, log, today }: Props) {
                     today={today}
                     units={runner.units}
                     onChange={runner.setWeek}
+                    loggedFor={loggedFor}
                   />
                   {canUseHealth ? (
                     <HealthCard

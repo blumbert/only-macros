@@ -25,11 +25,16 @@ type Props = {
   today: DayKey;
   units: Units;
   onChange: (key: DayKey, week: Week) => void;
+  /**
+   * What a day actually came to: its distance (hand-set or Apple Health) and
+   * its cross-training. A week that's over shows these instead of the plan.
+   */
+  loggedFor?: (day: DayKey) => { km: number; xtMin: number; xtEffort: number | null };
 };
 
 const WEEKDAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
-export function TrainingWeekEditor({ weeks, today, units, onChange }: Props) {
+export function TrainingWeekEditor({ weeks, today, units, onChange, loggedFor }: Props) {
   const { c } = useTheme();
   const thisWeek = weekKey(today);
   const [viewKey, setViewKey] = useState(thisWeek);
@@ -79,7 +84,23 @@ export function TrainingWeekEditor({ weeks, today, units, onChange }: Props) {
   const setXtEffort = (i: number, value: number) =>
     commit({ ...week, xt: { ...xt, effort: xt.effort.map((e, j) => (j === i ? value : e)) } });
   const efforts = optionRange(minEffort, maxEffort);
-  const problem = checkWeek(week);
+
+  // A week that's over shows what was done, not what was planned: a day with
+  // no running is a rest day, the total is what was run, and cross-training is
+  // what was logged. Workouts and long runs aren't guessed at. It's read-only.
+  const logged =
+    viewKey < thisWeek && loggedFor
+      ? WEEKDAY_INITIALS.map((_, i) => loggedFor(addDays(viewKey, i)))
+      : null;
+  const shownDays: DayType[] = logged ? logged.map((d) => (d.km > 0 ? 'easy' : 'rest')) : week.days;
+  const shownXt: WeekXt = logged
+    ? {
+        min: logged.map((d) => Math.round(d.xtMin)),
+        effort: logged.map((d) => d.xtEffort ?? defaultEffort),
+      }
+    : xt;
+  const shownMileage = logged ? show(logged.reduce((sum, d) => sum + d.km, 0)) : mileage;
+  const problem = logged ? null : checkWeek(week);
 
   const rows: { type: Exclude<DayType, 'easy'>; label: string; color: string }[] = [
     { type: 'workout', label: 'Workouts', color: c.macro.p },
@@ -112,7 +133,7 @@ export function TrainingWeekEditor({ weeks, today, units, onChange }: Props) {
         </Pressable>
       </View>
 
-      {carried ? (
+      {logged ? null : carried ? (
         <Text style={[styles.note, { color: c.muted }]}>
           Same as the week of {shortDate(found!.key)} — change anything to make it this week&apos;s own.
         </Text>
@@ -126,13 +147,14 @@ export function TrainingWeekEditor({ weeks, today, units, onChange }: Props) {
         <Field
           label={`Total ${units === 'imperial' ? 'miles' : 'km'}`}
           width={72}
-          value={mileage}
+          value={shownMileage}
+          readOnly={!!logged}
           onChange={(v) => {
             setMileage(v);
             commit({ ...week, km: toKm(v) });
           }}
         />
-        {hasLong ? (
+        {hasLong && !logged ? (
           <Field
             label={`Long run ${unit}`}
             value={longRun}
@@ -163,10 +185,11 @@ export function TrainingWeekEditor({ weeks, today, units, onChange }: Props) {
           <Text style={[styles.rowLabel, { color: c.muted }]}>{row.label}</Text>
           <View style={styles.chips}>
             {WEEKDAY_INITIALS.map((_, i) => {
-              const on = week.days[i] === row.type;
+              const on = shownDays[i] === row.type;
               return (
                 <Pressable
                   key={i}
+                  disabled={!!logged}
                   onPress={() => commit({ ...week, days: setDayType(week.days, i, row.type) })}
                   accessibilityRole="checkbox"
                   accessibilityState={{ checked: on }}
@@ -196,12 +219,13 @@ export function TrainingWeekEditor({ weeks, today, units, onChange }: Props) {
         <Text style={[styles.rowLabel, { color: c.muted }]}>Minutes</Text>
         <View style={styles.chips}>
           {WEEKDAY_INITIALS.map((_, i) => {
-            const on = xt.min[i] > 0;
+            const on = shownXt.min[i] > 0;
             return (
               <DoneTextInput
                 key={i}
+                editable={!logged}
                 maxFontSizeMultiplier={1.2}
-                value={showWhole(xt.min[i])}
+                value={showWhole(shownXt.min[i])}
                 onChangeText={(v) => setXtMin(i, v.replace(/[^0-9]/g, ''))}
                 keyboardType="number-pad"
                 inputMode="numeric"
@@ -227,7 +251,13 @@ export function TrainingWeekEditor({ weeks, today, units, onChange }: Props) {
         <Text style={[styles.rowLabel, { color: c.muted }]}>Effort</Text>
         <View style={styles.chips}>
           {WEEKDAY_INITIALS.map((_, i) =>
-            xt.min[i] > 0 ? (
+            shownXt.min[i] > 0 && logged ? (
+              <View key={i} style={[styles.effortBox, { borderColor: c.border }]}>
+                <Text style={[styles.effortText, { color: c.text }]}>
+                  {logged[i].xtEffort ?? '–'}
+                </Text>
+              </View>
+            ) : shownXt.min[i] > 0 ? (
               <Dropdown
                 key={`${viewKey}-${i}`}
                 compact
@@ -320,6 +350,7 @@ function Field({
   whole = false,
   maxLength = 5,
   width,
+  readOnly = false,
 }: {
   label: string;
   value: string;
@@ -329,6 +360,8 @@ function Field({
   maxLength?: number;
   /** A fixed width, for a short number; otherwise the field shares the row. */
   width?: number;
+  /** Shows a number that can't be changed here, like a past week's total. */
+  readOnly?: boolean;
 }) {
   const { c } = useTheme();
   return (
@@ -344,6 +377,7 @@ function Field({
         placeholder="0"
         placeholderTextColor={c.faint}
         maxLength={maxLength}
+        editable={!readOnly}
         accessibilityLabel={label}
         style={[
           styles.fieldInput,
@@ -355,6 +389,15 @@ function Field({
 }
 
 const styles = StyleSheet.create({
+  effortBox: {
+    width: 34,
+    height: 26,
+    borderRadius: 8,
+    borderWidth: StyleSheet.hairlineWidth * 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  effortText: { fontSize: 12, fontWeight: '700', fontVariant: ['tabular-nums'] },
   card: {
     // Above the cards that follow, so an open effort list floats over them.
     zIndex: 10,
