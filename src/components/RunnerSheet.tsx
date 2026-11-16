@@ -589,14 +589,11 @@ function DayTargetsCard({
           </View>
           <View style={styles.valueRow}>
             <View style={styles.sideCol}>
-              <Text style={[styles.vsLabel, { color: c.muted }]}>Target</Text>
+              <Text style={[styles.vsLabel, { color: c.muted }]}>Target (g)</Text>
             </View>
             {MACROS.map((m) => (
               <View key={m.key} style={styles.macroCol}>
-                <Text style={[styles.macroValue, { color: c.text }]}>
-                  {grams[m.key]}
-                  <Text style={[styles.unit, { color: c.faint }]}>g</Text>
-                </Text>
+                <Text style={[styles.macroValue, { color: c.text }]}>{grams[m.key]}</Text>
               </View>
             ))}
           </View>
@@ -605,14 +602,13 @@ function DayTargetsCard({
             <View style={[styles.macroRow, styles.vsRow]}>
               <View style={styles.sideCol}>
                 <Text style={[styles.vsLabel, { color: c.muted }]}>
-                  {offset === 0 ? 'Today' : 'Logged'}
+                  {offset === 0 ? 'Today (g)' : 'Logged (g)'}
                 </Text>
               </View>
               {MACROS.map((m) => (
                 <View key={m.key} style={styles.macroCol}>
                   <Text style={[styles.vsValue, { color: c.muted }]}>
                     {formatNumber(Math.round(eaten[m.key]))}
-                    <Text style={[styles.unit, { color: c.faint }]}>g</Text>
                     {/* How the day compares with its target: green over, red under. */}
                     {(() => {
                       const diff = Math.round(eaten[m.key]) - grams[m.key];
@@ -919,7 +915,7 @@ const styles = StyleSheet.create({
   macroCol: { flex: 1, alignItems: 'center' },
   valueRow: { flexDirection: 'row', alignItems: 'baseline' },
   vsRow: { marginTop: 6, alignItems: 'baseline' },
-  sideCol: { width: 48, justifyContent: 'flex-end' },
+  sideCol: { width: 70, justifyContent: 'flex-end' },
   vsLabel: { fontSize: 12, fontWeight: '700' },
   diff: { fontSize: 11, fontWeight: '700' },
   vsValue: { fontSize: 18, fontWeight: '700', fontVariant: ['tabular-nums'] },
