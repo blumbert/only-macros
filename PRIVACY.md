@@ -35,8 +35,8 @@ Foods you save — a name, its carbohydrates, protein and fat per serving, and a
 serving size if you give one — are saved the same way, and so is the name of a
 food when you add it to a day.
 
-If you connect Apple Health, the distance it reports for each recent day is
-saved the same way.
+If you connect Apple Health, the distance you ran and the minutes and energy
+of your other workouts on each recent day are saved the same way.
 
 ## AI food search (Premium)
 
@@ -82,10 +82,12 @@ Updates are signed, and the app installs only ones signed by the developer.
 ## Apple Health
 
 If you connect Apple Health on the Runner fueling page, the app reads your
-running workouts from it — only their date and distance — to fill in how far
-you ran on each of the last seven days. That is used to calculate your targets
-on your phone and is never sent anywhere. The app does not write anything to
-Apple Health, and it reads no other health data. You can stop it in the app,
+workouts from the last seven days. For runs it uses the date and distance, to
+fill in how far you ran each day. For other workouts (cycling, swimming, the
+gym and so on) it uses the date, duration and energy burned, to fill in that
+day's cross-training. These are used to calculate your targets on your phone
+and are never sent anywhere. The app does not write anything to Apple Health,
+and it reads no other health data. You can stop it in the app,
 and turn off its access any time in Settings › Health › Data Access & Devices.
 
 ## Camera and photos
