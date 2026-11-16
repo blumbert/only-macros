@@ -1,12 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { confirmDestructive } from '../confirm';
 import { formatTime } from '../date';
 import { parseMacroInput, sanitizeMacroInput } from '../macroInput';
 import type { Entry } from '../storage';
 import { formatGrams, MACROS, useTheme, type MacroKey } from '../theme';
+import { DoneTextInput } from './DoneTextInput';
 
 type Props = {
   entries: Entry[];
@@ -84,7 +85,7 @@ export function RecentEntries({ entries, onSave, onDelete }: Props) {
                       style={[styles.editField, { backgroundColor: c.surfaceAlt, borderColor: c.border }]}
                     >
                       <Text style={[styles.editLetter, { color: c.macro[m.key] }]}>{m.letter}</Text>
-                      <TextInput
+                      <DoneTextInput
                         value={draft[m.key]}
                         onChangeText={(value) =>
                           setDraft((prev) => ({ ...prev, [m.key]: sanitizeMacroInput(value) }))

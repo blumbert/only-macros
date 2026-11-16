@@ -2,6 +2,7 @@ import { forwardRef, useState } from 'react';
 import { StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { useTheme } from '../theme';
+import { DoneTextInput } from './DoneTextInput';
 
 type Props = {
   letter: string;
@@ -31,7 +32,7 @@ export const MacroField = forwardRef<TextInput, Props>(function MacroField(
         ]}
       >
         <Text style={[styles.letter, { color }]}>{letter}</Text>
-        <TextInput
+        <DoneTextInput
           ref={ref}
           value={value}
           onChangeText={onChangeText}

@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { confirmDestructive } from '../confirm';
 import { formatTime, longDate, type DayKey } from '../date';
@@ -10,6 +10,7 @@ import { scale } from '../nutrition/parseLabel';
 import { calories, sumDay, type Entry, type Totals } from '../storage';
 import { formatGrams, formatNumber, MACROS, useTheme, type MacroKey } from '../theme';
 import { FoodPickerSheet, SavedFoodBar } from './FoodPicker';
+import { DoneTextInput } from './DoneTextInput';
 
 type Props = {
   day: DayKey;
@@ -335,7 +336,7 @@ function MacroRow({
           style={[styles.field, { backgroundColor: c.surfaceAlt, borderColor: c.border }]}
         >
           <Text style={[styles.fieldLetter, { color: c.macro[m.key] }]}>{m.letter}</Text>
-          <TextInput
+          <DoneTextInput
             value={draft[m.key]}
             onChangeText={(value) => onChange({ ...draft, [m.key]: sanitizeMacroInput(value) })}
             keyboardType="decimal-pad"

@@ -38,6 +38,7 @@ import {
 } from '../fueling/training';
 import { isEmpty, sumDay, type Log, type Totals } from '../storage';
 import { formatNumber, MACROS, useTheme } from '../theme';
+import { DoneTextInput } from './DoneTextInput';
 import { Dropdown, range as optionRange } from './Dropdown';
 import { RunnerProfileForm } from './RunnerProfileForm';
 import { TrainingWeekEditor } from './TrainingWeekEditor';
@@ -71,6 +72,14 @@ function dayHeading(day: DayKey, offset: number): string {
   if (offset === -1) return 'YESTERDAY';
   return `${WEEKDAYS[fromDayKey(day).getDay()]} · ${shortDate(day).toUpperCase()}`;
 }
+
+/** The day's type, for the card's heading: "TODAY – REST DAY". */
+const DAY_HEADING: Record<DayType, string> = {
+  rest: 'REST DAY',
+  easy: 'EASY DAY',
+  workout: 'WORKOUT DAY',
+  long: 'LONG RUN DAY',
+};
 
 const DAY_NOUN: Record<DayType, string> = {
   rest: 'a rest day',
@@ -391,7 +400,10 @@ function DayTargetsCard({
           color={offset === -MAX_DAYS_BACK ? c.faint : c.text}
         />
       </Pressable>
-      <Text style={[styles.eyebrow, { color: c.muted }]}>{dayHeading(day, offset)}</Text>
+      <Text style={[styles.eyebrow, { color: c.muted }]}>
+        {dayHeading(day, offset)}
+        {plan && !problem ? ` – ${DAY_HEADING[plan.type]}` : ''}
+      </Text>
       <Pressable
         onPress={() => setOffset((o) => Math.min(o + 1, MAX_DAYS_AHEAD))}
         disabled={offset === MAX_DAYS_AHEAD}
@@ -510,17 +522,28 @@ function DayTargetsCard({
         <View style={[styles.trainingCol, styles.trainingColWide]}>
           <Text style={[styles.trainingLabel, { color: c.muted }]}>CROSS-TRAINING</Text>
           <View style={styles.pickRow}>
-            <Dropdown
+            <DoneTextInput
               key={`min-${day}`}
-              label="Cross-training minutes"
-              value={xt.min}
-              options={optionRange(0, Math.max(XT_MAX_MIN, xt.min))}
-              onChange={(min) =>
-                onSetXt(day, { min, effort: xt.effort ?? RULES.crossTraining.defaultEffort })
-              }
-              width={50}
+              value={xt.min > 0 ? String(xt.min) : ''}
+              onChangeText={(v) => {
+                const n = parseInt(v.replace(/[^0-9]/g, ''), 10);
+                const min = Number.isFinite(n) ? Math.min(n, XT_MAX_MIN) : 0;
+                onSetXt(day, { min, effort: xt.effort ?? RULES.crossTraining.defaultEffort });
+              }}
+              keyboardType="number-pad"
+              inputMode="numeric"
+              maxLength={3}
+              placeholder="0"
+              placeholderTextColor={c.faint}
+              selectTextOnFocus
+              maxFontSizeMultiplier={1.2}
+              accessibilityLabel="Cross-training minutes"
+              style={[
+                styles.minutesBox,
+                { color: c.text, backgroundColor: c.surfaceAlt, borderColor: c.border },
+              ]}
             />
-            <Text style={[styles.unit, { color: c.faint }]}>min</Text>
+            <Text style={[styles.unit, { color: c.faint }]}>minutes</Text>
             <Dropdown
               key={`effort-${day}`}
               label="Effort, 1 to 10"
@@ -535,10 +558,6 @@ function DayTargetsCard({
         </View>
       </View>
 
-      {/* What the day's training comes to, under the training itself. */}
-      <Text style={[styles.dayLabel, styles.dayLabelBelow, { color: c.muted }]}>
-        Recommended for {DAY_NOUN[plan.type]}
-      </Text>
 
       {past ? (
         <Compare target={grams} eaten={sumDay(log[day])} />
@@ -938,7 +957,6 @@ const styles = StyleSheet.create({
   },
   dayNav: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   eyebrow: { fontSize: 10, fontWeight: '700', letterSpacing: 1 },
-  dayLabel: { fontSize: 13, fontWeight: '600', textAlign: 'center', marginTop: 4 },
   empty: { marginTop: 10, fontSize: 14, fontWeight: '500', lineHeight: 19 },
   kcal: { fontSize: 30, fontWeight: '800', marginTop: 8, fontVariant: ['tabular-nums'] },
   unit: { fontSize: 13, fontWeight: '600' },
@@ -969,13 +987,23 @@ const styles = StyleSheet.create({
   },
   noticeTitle: { fontSize: 13, fontWeight: '700' },
   noticeText: { fontSize: 12, fontWeight: '500', lineHeight: 17 },
-  dayLabelBelow: { marginTop: 14 },
   // Above what follows, so an open dropdown floats over the numbers below.
   // Over the cards below it, for the dropdowns.
   raisedCard: { zIndex: 20 },
   training: { flexDirection: 'row', marginTop: 18, marginBottom: 8, zIndex: 10 },
-  pickRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  trainingCol: { flex: 1, alignItems: 'center', gap: 6 },
+  pickRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 4, rowGap: 6 },
+  trainingCol: { flex: 1, alignItems: 'flex-start', gap: 10 },
+  minutesBox: {
+    width: 44,
+    height: 34,
+    borderRadius: 10,
+    borderWidth: StyleSheet.hairlineWidth * 2,
+    padding: 0,
+    textAlign: 'center',
+    fontSize: 15,
+    fontWeight: '700',
+    fontVariant: ['tabular-nums'],
+  },
   // The run needs less room than cross-training's two wider boxes.
   trainingColNarrow: { flex: 0.85 },
   trainingColWide: { flex: 1.15 },

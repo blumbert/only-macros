@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useState, type ReactNode } from 'react';
-import { Pressable, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 
 import { addDays, describeDay, type DayKey } from '../date';
 import { servingsName, type FoodsStore } from '../foods';
@@ -11,6 +11,7 @@ import { calories, MAX_NAME, type Totals } from '../storage';
 import { formatGrams, formatNumber, useTheme, type MacroKey } from '../theme';
 import { EMPTY_MACRO_DRAFT, MacroInputs, type MacroDraft } from './MacroInputs';
 import { ServingsInput } from './ServingsInput';
+import { DoneTextInput } from './DoneTextInput';
 
 /** What a label scan or an AI search found, to fill the form with. */
 export type Prefill = {
@@ -208,7 +209,7 @@ export function FoodEntryForm({
       </View>
 
       <View style={[styles.card, { backgroundColor: c.surface, borderColor: c.border }]}>
-        <TextInput
+        <DoneTextInput
           value={name}
           onChangeText={setName}
           placeholder={saveToFoods ? 'Name' : 'Name (optional)'}

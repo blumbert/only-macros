@@ -6,7 +6,6 @@ import {
   Pressable,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -16,6 +15,7 @@ import { useTheme } from '../theme';
 import { FoodRow } from './FoodsSheet';
 import { ServingsInput } from './ServingsInput';
 import { KeyboardScrollView } from './KeyboardDone';
+import { DoneTextInput } from './DoneTextInput';
 
 /** Search shows once the list is long enough to need it. */
 const SEARCH_FROM = 8;
@@ -136,7 +136,7 @@ export function FoodPickerSheet({
             {foods.length >= SEARCH_FROM ? (
               <View style={[styles.search, { backgroundColor: c.surface, borderColor: c.border }]}>
                 <Ionicons name="search" size={16} color={c.faint} />
-                <TextInput
+                <DoneTextInput
                   value={query}
                   onChangeText={setQuery}
                   placeholder="Search"

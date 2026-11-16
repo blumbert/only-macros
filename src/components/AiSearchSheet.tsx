@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Linking, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { DayKey } from '../date';
 import type { FoodsStore } from '../foods';
@@ -9,6 +9,7 @@ import type { Totals } from '../storage';
 import { useTheme } from '../theme';
 import { entryStyles, FoodEntryForm, type Prefill } from './FoodEntryForm';
 import { Sheet } from './Sheet';
+import { DoneTextInput } from './DoneTextInput';
 
 type Props = {
   visible: boolean;
@@ -109,7 +110,7 @@ export function AiSearchSheet({ visible, onClose, today, onAdd, foods, onNeedPre
               a quart of Hornstra Farms Cow Tracks ice cream&rdquo;.
             </Text>
             <View style={styles.searchRow}>
-              <TextInput
+              <DoneTextInput
                 value={query}
                 onChangeText={(t) => setQuery(t.slice(0, MAX_QUERY))}
                 placeholder="What did you eat?"

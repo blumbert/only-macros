@@ -6,7 +6,6 @@ import {
   Pressable,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -22,6 +21,7 @@ import { EMPTY_MACRO_DRAFT, MacroInputs, toMacroDraft, type MacroDraft } from '.
 import { LabelCamera } from './LabelCamera';
 import { ScanButtons } from './ScanButtons';
 import { KeyboardScrollView } from './KeyboardDone';
+import { DoneTextInput } from './DoneTextInput';
 
 type Props = {
   visible: boolean;
@@ -225,7 +225,7 @@ function FoodForm({
       <Text style={[styles.eyebrow, styles.sectionLabel, { color: c.muted }]}>
         {food ? 'EDIT FOOD' : 'NEW FOOD'}
       </Text>
-      <TextInput
+      <DoneTextInput
         value={name}
         onChangeText={setName}
         placeholder="Name"
@@ -242,7 +242,7 @@ function FoodForm({
         PER SERVING
       </Text>
       <MacroInputs draft={draft} onChange={setDraft} labelPrefix="Per serving" missing={missing} />
-      <TextInput
+      <DoneTextInput
         value={serving}
         onChangeText={setServing}
         placeholder="Serving size (optional), e.g. 1 bar"

@@ -1,7 +1,8 @@
-import { StyleSheet, Text, TextInput, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
 import { sanitizeMacroInput } from '../macroInput';
 import { MACROS, useTheme, type MacroKey } from '../theme';
+import { DoneTextInput } from './DoneTextInput';
 
 export type MacroDraft = Record<MacroKey, string>;
 
@@ -42,7 +43,7 @@ export function MacroInputs({ draft, onChange, labelPrefix, missing = [] }: Prop
             ]}
           >
             <Text style={[styles.letter, { color: c.macro[m.key] }]}>{m.letter}</Text>
-            <TextInput
+            <DoneTextInput
               value={draft[m.key]}
               onChangeText={(value) => onChange({ ...draft, [m.key]: sanitizeMacroInput(value) })}
               keyboardType="decimal-pad"

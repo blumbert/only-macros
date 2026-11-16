@@ -1,8 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { parseMacroInput, sanitizeServingsInput } from '../macroInput';
 import { useTheme } from '../theme';
+import { DoneTextInput } from './DoneTextInput';
 
 type Props = {
   /** As typed, so "1." can be on its way to "1.5". */
@@ -37,7 +38,7 @@ export function ServingsInput({ value, onChange, compact }: Props) {
           { height: size, width: compact ? 52 : 64, backgroundColor: c.surfaceAlt, borderColor: c.border },
         ]}
       >
-        <TextInput
+        <DoneTextInput
           value={value}
           onChangeText={(v) => onChange(sanitizeServingsInput(v))}
           keyboardType="decimal-pad"

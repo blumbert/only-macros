@@ -1,4 +1,3 @@
-import { Ionicons } from '@expo/vector-icons';
 import { useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
@@ -67,10 +66,6 @@ export function Dropdown({
         >
           {shown}
         </Text>
-        {/* Only the tiny grid boxes keep an arrow; the regular ones are clear enough as boxes. */}
-        {compact ? (
-          <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={8} color={c.muted} />
-        ) : null}
       </Pressable>
       {open ? (
         <View

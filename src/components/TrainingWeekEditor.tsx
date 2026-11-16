@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { addDays, shortDate, WEEKDAY_INITIALS, type DayKey } from '../date';
 import type { Units } from '../fueling/profile';
@@ -18,6 +18,7 @@ import {
 } from '../fueling/training';
 import { useTheme } from '../theme';
 import { Dropdown, range as optionRange } from './Dropdown';
+import { DoneTextInput } from './DoneTextInput';
 
 type Props = {
   weeks: Weeks;
@@ -121,7 +122,8 @@ export function TrainingWeekEditor({ weeks, today, units, onChange }: Props) {
 
       <View style={styles.fields}>
         <Field
-          label={`Weekly ${unit}`}
+          label={`Total ${units === 'imperial' ? 'miles' : 'km'}`}
+          width={72}
           value={mileage}
           onChange={(v) => {
             setMileage(v);
@@ -193,7 +195,7 @@ export function TrainingWeekEditor({ weeks, today, units, onChange }: Props) {
           {WEEKDAY_INITIALS.map((_, i) => {
             const on = xt.min[i] > 0;
             return (
-              <TextInput
+              <DoneTextInput
                 key={i}
                 maxFontSizeMultiplier={1.2}
                 value={showWhole(xt.min[i])}
@@ -259,6 +261,7 @@ function Field({
   onChange,
   whole = false,
   maxLength = 5,
+  width,
 }: {
   label: string;
   value: string;
@@ -266,12 +269,16 @@ function Field({
   /** Whole numbers only (minutes, effort). */
   whole?: boolean;
   maxLength?: number;
+  /** A fixed width, for a short number; otherwise the field shares the row. */
+  width?: number;
 }) {
   const { c } = useTheme();
   return (
-    <View style={styles.flex}>
-      <Text style={[styles.fieldLabel, { color: c.muted }]}>{label}</Text>
-      <TextInput
+    <View style={width ? { width } : styles.flex}>
+      <Text style={[styles.fieldLabel, { color: c.muted }]} numberOfLines={1}>
+        {label}
+      </Text>
+      <DoneTextInput
         value={value}
         onChangeText={(v) => onChange(v.replace(whole ? /[^0-9]/g : /[^0-9.]/g, ''))}
         keyboardType={whole ? 'number-pad' : 'decimal-pad'}
