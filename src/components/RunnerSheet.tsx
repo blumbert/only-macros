@@ -73,6 +73,10 @@ function dayHeading(day: DayKey, offset: number): string {
   return `${WEEKDAYS[fromDayKey(day).getDay()]} · ${shortDate(day).toUpperCase()}`;
 }
 
+/** Logged against a target: green over it, red under it. */
+const OVER_COLOR = '#1F9D55';
+const UNDER_COLOR = '#E5484D';
+
 /** The day's type, for the card's heading: "TODAY – REST DAY". */
 const DAY_HEADING: Record<DayType, string> = {
   rest: 'REST DAY',
@@ -265,6 +269,7 @@ export function RunnerSheet({ visible, onClose, log, today }: Props) {
                     today={today}
                     weeks={planned.weeks}
                     dayKm={dayKm}
+                    manualKm={runner.dayKm}
                     onSetKm={runner.setDayKm}
                     xtFor={xtFor}
                     xtKcal={xtKcal}
@@ -351,6 +356,7 @@ function DayTargetsCard({
   today,
   weeks,
   dayKm,
+  manualKm,
   onSetKm,
   xtFor,
   xtKcal,
@@ -363,6 +369,8 @@ function DayTargetsCard({
   weeks: ReturnType<typeof useRunner>['weeks'];
   /** Every known distance: hand-set over Apple Health. */
   dayKm: DayKm;
+  /** Distances the runner picked by hand; anything else shows gray. */
+  manualKm: DayKm;
   onSetKm: (day: DayKey, km: number | null) => void;
   /** A day's cross-training, from whichever source has it. */
   xtFor: (day: DayKey) => DayXt;
@@ -454,6 +462,7 @@ function DayTargetsCard({
   const wholePart = Math.floor(tenths / 10);
   const tenthPart = tenths % 10;
   const setDistance = (whole: number, tenth: number) => onSetKm(day, toKm(whole + tenth / 10));
+  const distancePicked = manualKm[day] !== undefined;
 
   const grams = { c: t.carbsG, p: t.proteinG, f: t.fatG };
   const eatenToday = sumDay(log[today]);
@@ -496,7 +505,7 @@ function DayTargetsCard({
       {/* The day's training, side by side: the run, and cross-training. */}
       <View style={styles.training}>
         <View style={[styles.trainingCol, styles.trainingColNarrow]}>
-          <Text style={[styles.trainingLabel, { color: c.muted }]}>RUN</Text>
+          <Text style={[styles.trainingLabel, { color: c.muted }]}>RUNNING</Text>
           <View style={styles.pickRow}>
             <Dropdown
               key={`whole-${day}`}
@@ -504,6 +513,7 @@ function DayTargetsCard({
               value={wholePart}
               options={optionRange(0, Math.max(99, wholePart))}
               onChange={(w) => setDistance(w, tenthPart)}
+              muted={!distancePicked}
               width={44}
             />
             <Text style={[styles.unit, { color: c.faint }]}>.</Text>
@@ -513,6 +523,7 @@ function DayTargetsCard({
               value={tenthPart}
               options={optionRange(0, 9)}
               onChange={(tn) => setDistance(wholePart, tn)}
+              muted={!distancePicked}
               width={36}
             />
             <Text style={[styles.unit, { color: c.faint }]}>{unit}</Text>
@@ -524,7 +535,9 @@ function DayTargetsCard({
           <View style={styles.pickRow}>
             <DoneTextInput
               key={`min-${day}`}
-              value={xt.min > 0 ? String(xt.min) : ''}
+              // Minutes from the plan or Apple Health show as the gray
+              // placeholder until the runner types their own.
+              value={xt.source === 'manual' && xt.min > 0 ? String(xt.min) : ''}
               onChangeText={(v) => {
                 const n = parseInt(v.replace(/[^0-9]/g, ''), 10);
                 const min = Number.isFinite(n) ? Math.min(n, XT_MAX_MIN) : 0;
@@ -533,7 +546,7 @@ function DayTargetsCard({
               keyboardType="number-pad"
               inputMode="numeric"
               maxLength={3}
-              placeholder="0"
+              placeholder={xt.source === 'manual' ? '0' : String(xt.min)}
               placeholderTextColor={c.faint}
               selectTextOnFocus
               maxFontSizeMultiplier={1.2}
@@ -543,7 +556,7 @@ function DayTargetsCard({
                 { color: c.text, backgroundColor: c.surfaceAlt, borderColor: c.border },
               ]}
             />
-            <Text style={[styles.unit, { color: c.faint }]}>minutes</Text>
+            <Text style={[styles.unit, { color: c.faint }]}>min</Text>
             <Dropdown
               key={`effort-${day}`}
               label="Effort, 1 to 10"
@@ -551,6 +564,7 @@ function DayTargetsCard({
               display={xt.min > 0 && xt.effort === null ? '–' : undefined}
               options={optionRange(RULES.crossTraining.minEffort, RULES.crossTraining.maxEffort)}
               onChange={(effort) => onSetXt(day, { min: xt.min, effort })}
+              muted={xt.source !== 'manual'}
               width={38}
             />
             <Text style={[styles.unit, { color: c.faint }]}>rpe</Text>
@@ -602,7 +616,7 @@ function DayTargetsCard({
                       const diff = Math.round(eatenToday[m.key]) - grams[m.key];
                       if (diff === 0) return null;
                       return (
-                        <Text style={[styles.diff, { color: diff > 0 ? '#1F9D55' : '#E5484D' }]}>
+                        <Text style={[styles.diff, { color: diff > 0 ? OVER_COLOR : UNDER_COLOR }]}>
                           {' '}
                           {diff > 0 ? '+' : '−'}
                           {formatNumber(Math.abs(diff))}
@@ -687,13 +701,23 @@ function Compare({
   }));
   const signed = (n: number) => (n > 0 ? `+${formatNumber(n)}` : n < 0 ? `−${formatNumber(-n)}` : '0');
 
-  const row = (label: string, value: (col: (typeof cols)[number]) => string, color: string, bold?: boolean) => (
+  type Col = (typeof cols)[number];
+  const row = (
+    label: string,
+    value: (col: Col) => string,
+    color: string | ((col: Col) => string),
+    bold?: boolean,
+  ) => (
     <View style={styles.compareRow}>
       <Text style={[styles.compareLabel, { color: c.muted }]}>{label}</Text>
       {cols.map((col) => (
         <Text
           key={col.key}
-          style={[styles.compareValue, bold && styles.compareBold, { color }]}
+          style={[
+            styles.compareValue,
+            bold && styles.compareBold,
+            { color: typeof color === 'function' ? color(col) : color },
+          ]}
           numberOfLines={1}
         >
           {value(col)}
@@ -715,7 +739,13 @@ function Compare({
       {row('Recommended', (col) => `${formatNumber(col.target)}${col.unit}`, c.text, true)}
       {row('Logged', (col) => (logged ? `${formatNumber(col.eaten)}${col.unit}` : '—'), c.text, true)}
       {logged
-        ? row('Difference', (col) => signed(col.eaten - col.target), c.faint)
+        ? row(
+            'Difference',
+            (col) => signed(col.eaten - col.target),
+            // Same as today's: green over the target, red under it.
+            (col) =>
+              col.eaten > col.target ? OVER_COLOR : col.eaten < col.target ? UNDER_COLOR : c.faint,
+          )
         : null}
       {!logged ? (
         <Text style={[styles.why, { color: c.faint }]}>Nothing was logged this day.</Text>

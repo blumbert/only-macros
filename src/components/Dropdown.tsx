@@ -19,6 +19,7 @@ export function Dropdown({
   onChange,
   label,
   display,
+  muted = false,
   width = 56,
   compact = false,
 }: {
@@ -29,6 +30,8 @@ export function Dropdown({
   label: string;
   /** What the box shows, when it isn't the selected option's label. */
   display?: string;
+  /** Gray, like a placeholder: the value is a default nobody has picked yet. */
+  muted?: boolean;
   width?: number;
   /** Small, to fit a grid column. */
   compact?: boolean;
@@ -60,7 +63,7 @@ export function Dropdown({
         ]}
       >
         <Text
-          style={[styles.value, compact && styles.valueCompact, { color: c.text }]}
+          style={[styles.value, compact && styles.valueCompact, { color: muted ? c.faint : c.text }]}
           numberOfLines={1}
           maxFontSizeMultiplier={1.2}
         >

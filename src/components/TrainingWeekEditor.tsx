@@ -189,8 +189,9 @@ export function TrainingWeekEditor({ weeks, today, units, onChange }: Props) {
       {/* Cross-training, under the running: any day can have it, each with
           its own minutes and effort. Typing minutes plans that day. */}
       <View style={[styles.divider, { backgroundColor: c.border }]} />
+      <Text style={[styles.sectionHead, { color: c.text }]}>Cross-training</Text>
       <View style={styles.chipRow}>
-        <Text style={[styles.rowLabel, { color: c.muted }]}>Cross-train</Text>
+        <Text style={[styles.rowLabel, { color: c.muted }]}>Minutes</Text>
         <View style={styles.chips}>
           {WEEKDAY_INITIALS.map((_, i) => {
             const on = xt.min[i] > 0;
@@ -347,6 +348,7 @@ const styles = StyleSheet.create({
   raised: { zIndex: 10 },
   headerRow: { marginTop: 14 },
   dayHead: { width: 34, textAlign: 'center', fontSize: 12, fontWeight: '700' },
+  sectionHead: { fontSize: 13, fontWeight: '700', marginTop: 10 },
   divider: { height: StyleSheet.hairlineWidth * 2, marginTop: 14, marginBottom: 2 },
   hint: { fontSize: 11, fontWeight: '500', marginTop: 12 },
   error: { fontSize: 13, fontWeight: '600', marginTop: 8 },
