@@ -45,3 +45,7 @@ yarn-error.*
 
 # The AI search Worker deploys separately to Cloudflare.
 /server/
+
+# OTA update signing: ship the certificate, never the private key.
+!certs/certificate.pem
+/.keys/
