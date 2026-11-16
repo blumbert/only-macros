@@ -543,7 +543,7 @@ function DayTargetsCard({
               muted={!distancePicked}
               width={36}
             />
-            <Text style={[styles.unit, { color: c.faint }]}>{unit}</Text>
+            <Text numberOfLines={1} style={[styles.unit, { color: c.faint }]}>{unit}</Text>
           </View>
         </View>
         <View style={[styles.trainingDivider, { backgroundColor: c.border }]} />
@@ -573,7 +573,7 @@ function DayTargetsCard({
                 { color: c.text, backgroundColor: c.surfaceAlt, borderColor: c.border },
               ]}
             />
-            <Text style={[styles.unit, { color: c.faint }]}>min</Text>
+            <Text numberOfLines={1} style={[styles.unit, { color: c.faint }]}>min</Text>
             <Dropdown
               key={`effort-${day}`}
               label="Effort, 1 to 10"
@@ -584,7 +584,7 @@ function DayTargetsCard({
               muted={xtFromPlan}
               width={38}
             />
-            <Text style={[styles.unit, { color: c.faint }]}>rpe</Text>
+            <Text numberOfLines={1} style={[styles.unit, { color: c.faint }]}>rpe</Text>
           </View>
         </View>
       </View>
@@ -607,7 +607,7 @@ function DayTargetsCard({
       <View style={styles.valueRow}>
         {COLUMNS.map((m) => (
           <View key={m.key} style={[styles.macroCol, m.key === 'kcal' && styles.kcalCol]}>
-            <Text style={[m.key === 'kcal' ? styles.kcalValue : styles.macroValue, { color: c.text }]}>
+            <Text numberOfLines={1} adjustsFontSizeToFit style={[m.key === 'kcal' ? styles.kcalValue : styles.macroValue, { color: c.text }]}>
               {formatNumber(targetOf[m.key])}
             </Text>
           </View>
