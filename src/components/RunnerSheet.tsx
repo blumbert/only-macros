@@ -271,7 +271,7 @@ export function RunnerSheet({ visible, onClose, log, today }: Props) {
                 </>
               ) : (
                 <>
-                  <Text style={[styles.sectionTitle, { color: c.text }]}>Daily Targets</Text>
+                  <Text style={[styles.sectionTitle, styles.firstTitle, { color: c.text }]}>Daily Targets</Text>
                   <DayTargetsCard
                     profile={profile}
                     units={runner.units}
@@ -959,6 +959,8 @@ function Signs() {
 }
 
 const styles = StyleSheet.create({
+  // The first heading sits right under the sheet's header bar.
+  firstTitle: { marginTop: 0 },
   sectionTitle: { fontSize: 22, fontWeight: '800', letterSpacing: -0.3, marginTop: 18, marginBottom: 2, textAlign: 'center' },
   sheet: { flex: 1 },
   flex: { flex: 1 },
