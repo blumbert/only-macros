@@ -19,6 +19,7 @@ import {
   mergeDayKm,
   withHealthWeeks,
   type DayXt,
+  type HealthXt,
 } from '../fueling/healthDays';
 import {
   dayTargets,
@@ -281,6 +282,7 @@ export function RunnerSheet({ visible, onClose, log, today }: Props) {
                     healthDays={healthDays}
                     onSetKm={runner.setDayKm}
                     xtFor={xtFor}
+                    healthXt={healthXt}
                     xtKcal={xtKcal}
                     onSetXt={runner.setDayXt}
                   />
@@ -369,6 +371,7 @@ function DayTargetsCard({
   healthDays,
   onSetKm,
   xtFor,
+  healthXt,
   xtKcal,
   onSetXt,
 }: {
@@ -386,6 +389,8 @@ function DayTargetsCard({
   onSetKm: (day: DayKey, km: number | null) => void;
   /** A day's cross-training, from whichever source has it. */
   xtFor: (day: DayKey) => DayXt;
+  /** Apple Health's cross-training by day, when connected. */
+  healthXt: HealthXt | null;
   /** Cross-training energy for the last 7 days, for energy availability. */
   xtKcal: Record<DayKey, number>;
   onSetXt: (day: DayKey, xt: { min: number; effort: number } | null) => void;
@@ -481,6 +486,27 @@ function DayTargetsCard({
   // Health, it's real and shows white.
   const distancePicked = distanceSource(day, manualKm, healthDays, today) !== 'plan';
   const xtFromPlan = xt.source === 'plan' || xt.source === 'none';
+  // Changed by hand: offer to go back to Apple Health's distance if it has a
+  // run that day, otherwise to the plan in This week. Clearing the hand-set
+  // number does either, since Health outranks the plan.
+  const healthKm = healthDays?.[day];
+  const healthHasRun = healthKm !== undefined && (day < today || healthKm > 0);
+  const kmRevert =
+    manualKm[day] === undefined
+      ? null
+      : !healthHasRun
+        ? 'Use Plan'
+        : Math.round(toUnit(healthKm) * 10) !== tenths
+          ? 'Use Health'
+          : null;
+  // Same for cross-training.
+  const healthXtDay = healthXt?.[day];
+  const xtRevert =
+    xt.source !== 'manual'
+      ? null
+      : (healthXtDay?.min ?? 0) > 0
+        ? 'Use Health'
+        : 'Use Plan';
 
   const grams = { c: t.carbsG, p: t.proteinG, f: t.fatG };
   const eaten = sumDay(log[day]);
@@ -555,6 +581,16 @@ function DayTargetsCard({
             </View>
             <Text numberOfLines={1} style={[styles.unit, { color: c.faint }]}>{unit}</Text>
           </View>
+          {kmRevert ? (
+            <Pressable
+              onPress={() => onSetKm(day, null)}
+              hitSlop={8}
+              accessibilityRole="button"
+              style={styles.useHealth}
+            >
+              <Text style={[styles.useHealthLabel, { color: c.accent }]}>{kmRevert}</Text>
+            </Pressable>
+          ) : null}
         </View>
         <View style={[styles.trainingDivider, { backgroundColor: c.border }]} />
         <View style={styles.trainingCol}>
@@ -600,6 +636,16 @@ function DayTargetsCard({
               <Text numberOfLines={1} style={[styles.unit, { color: c.faint }]}>rpe</Text>
             </View>
           </View>
+          {xtRevert ? (
+            <Pressable
+              onPress={() => onSetXt(day, null)}
+              hitSlop={8}
+              accessibilityRole="button"
+              style={styles.useHealth}
+            >
+              <Text style={[styles.useHealthLabel, { color: c.accent }]}>{xtRevert}</Text>
+            </Pressable>
+          ) : null}
         </View>
       </View>
 
@@ -942,7 +988,10 @@ const styles = StyleSheet.create({
   macroCol: { flex: 1, alignItems: 'center' },
   valueRow: { flexDirection: 'row', alignItems: 'baseline' },
   vsRow: { marginTop: 6, alignItems: 'baseline' },
-  tvtHead: { textAlign: 'center', fontSize: 12, fontWeight: '700', marginTop: 12 },
+  tvtHead: { textAlign: 'center', fontSize: 12, fontWeight: '700', marginTop: 17 },
+  // Sits in the gap under the run's boxes, so it doesn't push the card down.
+  useHealth: { position: 'absolute', top: '100%', marginTop: 4, alignSelf: 'center' },
+  useHealthLabel: { fontSize: 12, fontWeight: '700' },
   // Same width as the macros; calories are just set smaller to fit four digits.
   kcalCol: {},
   kcalVs: { fontSize: 13 },
