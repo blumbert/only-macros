@@ -3,7 +3,6 @@ import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { parseMacroInput, sanitizeServingsInput } from '../macroInput';
 import { useTheme } from '../theme';
-import { DONE_ID } from './KeyboardDone';
 
 type Props = {
   /** As typed, so "1." can be on its way to "1.5". */
@@ -39,7 +38,6 @@ export function ServingsInput({ value, onChange, compact }: Props) {
         ]}
       >
         <TextInput
-          inputAccessoryViewID={DONE_ID}
           value={value}
           onChangeText={(v) => onChange(sanitizeServingsInput(v))}
           keyboardType="decimal-pad"

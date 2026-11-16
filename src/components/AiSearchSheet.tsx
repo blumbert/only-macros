@@ -9,7 +9,6 @@ import type { Totals } from '../storage';
 import { useTheme } from '../theme';
 import { entryStyles, FoodEntryForm, type Prefill } from './FoodEntryForm';
 import { Sheet } from './Sheet';
-import { DONE_ID } from './KeyboardDone';
 
 type Props = {
   visible: boolean;
@@ -111,7 +110,6 @@ export function AiSearchSheet({ visible, onClose, today, onAdd, foods, onNeedPre
             </Text>
             <View style={styles.searchRow}>
               <TextInput
-                inputAccessoryViewID={DONE_ID}
                 value={query}
                 onChangeText={(t) => setQuery(t.slice(0, MAX_QUERY))}
                 placeholder="What did you eat?"

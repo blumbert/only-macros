@@ -10,7 +10,6 @@ import { scale } from '../nutrition/parseLabel';
 import { calories, sumDay, type Entry, type Totals } from '../storage';
 import { formatGrams, formatNumber, MACROS, useTheme, type MacroKey } from '../theme';
 import { FoodPickerSheet, SavedFoodBar } from './FoodPicker';
-import { DONE_ID } from './KeyboardDone';
 
 type Props = {
   day: DayKey;
@@ -337,7 +336,6 @@ function MacroRow({
         >
           <Text style={[styles.fieldLetter, { color: c.macro[m.key] }]}>{m.letter}</Text>
           <TextInput
-            inputAccessoryViewID={DONE_ID}
             value={draft[m.key]}
             onChangeText={(value) => onChange({ ...draft, [m.key]: sanitizeMacroInput(value) })}
             keyboardType="decimal-pad"

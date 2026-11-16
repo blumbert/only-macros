@@ -11,7 +11,6 @@ import { calories, MAX_NAME, type Totals } from '../storage';
 import { formatGrams, formatNumber, useTheme, type MacroKey } from '../theme';
 import { EMPTY_MACRO_DRAFT, MacroInputs, type MacroDraft } from './MacroInputs';
 import { ServingsInput } from './ServingsInput';
-import { DONE_ID } from './KeyboardDone';
 
 /** What a label scan or an AI search found, to fill the form with. */
 export type Prefill = {
@@ -210,7 +209,6 @@ export function FoodEntryForm({
 
       <View style={[styles.card, { backgroundColor: c.surface, borderColor: c.border }]}>
         <TextInput
-          inputAccessoryViewID={DONE_ID}
           value={name}
           onChangeText={setName}
           placeholder={saveToFoods ? 'Name' : 'Name (optional)'}

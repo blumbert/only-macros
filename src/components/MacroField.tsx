@@ -2,7 +2,6 @@ import { forwardRef, useState } from 'react';
 import { StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { useTheme } from '../theme';
-import { DONE_ID } from './KeyboardDone';
 
 type Props = {
   letter: string;
@@ -33,7 +32,6 @@ export const MacroField = forwardRef<TextInput, Props>(function MacroField(
       >
         <Text style={[styles.letter, { color }]}>{letter}</Text>
         <TextInput
-          inputAccessoryViewID={DONE_ID}
           ref={ref}
           value={value}
           onChangeText={onChangeText}

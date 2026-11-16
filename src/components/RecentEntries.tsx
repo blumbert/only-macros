@@ -7,7 +7,6 @@ import { formatTime } from '../date';
 import { parseMacroInput, sanitizeMacroInput } from '../macroInput';
 import type { Entry } from '../storage';
 import { formatGrams, MACROS, useTheme, type MacroKey } from '../theme';
-import { DONE_ID } from './KeyboardDone';
 
 type Props = {
   entries: Entry[];
@@ -86,7 +85,6 @@ export function RecentEntries({ entries, onSave, onDelete }: Props) {
                     >
                       <Text style={[styles.editLetter, { color: c.macro[m.key] }]}>{m.letter}</Text>
                       <TextInput
-                        inputAccessoryViewID={DONE_ID}
                         value={draft[m.key]}
                         onChangeText={(value) =>
                           setDraft((prev) => ({ ...prev, [m.key]: sanitizeMacroInput(value) }))

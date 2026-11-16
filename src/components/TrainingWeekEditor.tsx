@@ -18,7 +18,6 @@ import {
 } from '../fueling/training';
 import { useTheme } from '../theme';
 import { Dropdown, range as optionRange } from './Dropdown';
-import { DONE_ID } from './KeyboardDone';
 
 type Props = {
   weeks: Weeks;
@@ -195,7 +194,6 @@ export function TrainingWeekEditor({ weeks, today, units, onChange }: Props) {
             const on = xt.min[i] > 0;
             return (
               <TextInput
-                inputAccessoryViewID={DONE_ID}
                 key={i}
                 maxFontSizeMultiplier={1.2}
                 value={showWhole(xt.min[i])}
@@ -274,7 +272,6 @@ function Field({
     <View style={styles.flex}>
       <Text style={[styles.fieldLabel, { color: c.muted }]}>{label}</Text>
       <TextInput
-        inputAccessoryViewID={DONE_ID}
         value={value}
         onChangeText={(v) => onChange(v.replace(whole ? /[^0-9]/g : /[^0-9.]/g, ''))}
         keyboardType={whole ? 'number-pad' : 'decimal-pad'}

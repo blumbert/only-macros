@@ -4,7 +4,6 @@ import {
   Modal,
   Platform,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -24,7 +23,7 @@ import type { FoodsStore } from '../foods';
 import { calories, sumDay, type Log, type Totals } from '../storage';
 import { formatNumber, useTheme } from '../theme';
 import { DayCard } from './DayCard';
-import { KeyboardDoneBar } from './KeyboardDone';
+import { KeyboardScrollView } from './KeyboardDone';
 
 type Props = {
   visible: boolean;
@@ -146,8 +145,7 @@ export function CalendarSheet({
         </View>
 
         <View style={styles.flex}>
-        <ScrollView
-          automaticallyAdjustKeyboardInsets
+        <KeyboardScrollView
           contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 24 }]}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
@@ -244,9 +242,8 @@ export function CalendarSheet({
                 // With only today logged there is no finished day to average.
                 (month.finished ? '  ·  ' + formatNumber(month.average) + ' kcal average' : '')}
           </Text>
-        </ScrollView>
+        </KeyboardScrollView>
         </View>
-        <KeyboardDoneBar />
       </View>
     </Modal>
   );

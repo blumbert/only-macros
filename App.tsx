@@ -6,7 +6,6 @@ import {
   Keyboard,
   Platform,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -39,7 +38,7 @@ import { usePremium } from './src/premium/usePremium';
 import { sumDay } from './src/storage';
 import { formatGrams, MACROS, useTheme, type MacroKey } from './src/theme';
 import { useLog } from './src/useLog';
-import { KeyboardDoneBar } from './src/components/KeyboardDone';
+import { KeyboardScrollView } from './src/components/KeyboardDone';
 
 type Draft = Record<MacroKey, string>;
 
@@ -203,8 +202,7 @@ function Screen() {
       <StatusBar style={isDark ? 'light' : 'dark'} />
 
       <View style={styles.root}>
-        <ScrollView
-          automaticallyAdjustKeyboardInsets
+        <KeyboardScrollView
           contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 40 }]}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="interactive"
@@ -325,9 +323,8 @@ function Screen() {
             />
           </View>
           </View>
-        </ScrollView>
+        </KeyboardScrollView>
       </View>
-      <KeyboardDoneBar />
 
       {lastAdd ? (
         <Animated.View

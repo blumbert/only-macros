@@ -4,7 +4,6 @@ import {
   Modal,
   Platform,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -42,7 +41,7 @@ import { formatNumber, MACROS, useTheme } from '../theme';
 import { Dropdown, range as optionRange } from './Dropdown';
 import { RunnerProfileForm } from './RunnerProfileForm';
 import { TrainingWeekEditor } from './TrainingWeekEditor';
-import { KeyboardDoneBar } from './KeyboardDone';
+import { KeyboardScrollView } from './KeyboardDone';
 
 type Props = {
   visible: boolean;
@@ -224,8 +223,7 @@ export function RunnerSheet({ visible, onClose, log, today }: Props) {
         </View>
 
         <View style={styles.flex}>
-          <ScrollView
-            automaticallyAdjustKeyboardInsets
+          <KeyboardScrollView
             contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 32 }]}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
@@ -330,9 +328,8 @@ export function RunnerSheet({ visible, onClose, log, today }: Props) {
                 </>
               )}
             </View>
-          </ScrollView>
+          </KeyboardScrollView>
         </View>
-        <KeyboardDoneBar />
       </View>
     </Modal>
   );
@@ -548,8 +545,7 @@ function DayTargetsCard({
       ) : (
         <>
           {/* Just carbs, protein and fat: calories are only what they add up
-              to. "Targets" and "Today" label the rows on the left; the right
-              column matches its width so the macros stay centred. */}
+              to. "Target" and "Today" label the rows on the left. */}
           <View style={styles.macroRow}>
             <View style={styles.sideCol} />
             {MACROS.map((m) => (
@@ -557,11 +553,10 @@ function DayTargetsCard({
                 <Text style={[styles.macroLetter, { color: c.macro[m.key] }]}>{m.letter}</Text>
               </View>
             ))}
-            <View style={styles.sideCol} />
           </View>
           <View style={styles.valueRow}>
             <View style={styles.sideCol}>
-              <Text style={[styles.vsLabel, { color: c.muted }]}>Targets</Text>
+              <Text style={[styles.vsLabel, { color: c.muted }]}>Target</Text>
             </View>
             {MACROS.map((m) => (
               <View key={m.key} style={styles.macroCol}>
@@ -571,7 +566,6 @@ function DayTargetsCard({
                 </Text>
               </View>
             ))}
-            <View style={styles.sideCol} />
           </View>
           {/* What's been logged today so far, under what's recommended. */}
           {offset === 0 ? (
@@ -599,7 +593,6 @@ function DayTargetsCard({
                   </Text>
                 </View>
               ))}
-              <View style={styles.sideCol} />
             </View>
           ) : null}
         </>

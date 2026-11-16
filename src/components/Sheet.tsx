@@ -3,7 +3,6 @@ import {
   Modal,
   Platform,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -11,7 +10,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useTheme } from '../theme';
-import { KeyboardDoneBar } from './KeyboardDone';
+import { KeyboardScrollView } from './KeyboardDone';
 
 type Props = {
   visible: boolean;
@@ -51,17 +50,15 @@ export function Sheet({ visible, onClose, title, onShow, closeLabel = 'Done', ch
         </View>
 
         <View style={styles.flex}>
-          <ScrollView
-            automaticallyAdjustKeyboardInsets
+          <KeyboardScrollView
             contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 32 }]}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode="interactive"
           >
             <View style={styles.content}>{children}</View>
-          </ScrollView>
+          </KeyboardScrollView>
         </View>
-        <KeyboardDoneBar />
       </View>
     </Modal>
   );

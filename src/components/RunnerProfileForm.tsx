@@ -5,7 +5,6 @@ import type { BoneHistory, Cycle, Goal, Profile, Sex } from '../fueling/model';
 import type { Units } from '../fueling/profile';
 import { useTheme } from '../theme';
 import { Segmented } from './Segmented';
-import { DONE_ID } from './KeyboardDone';
 
 const KG_PER_LB = 0.45359237;
 
@@ -94,7 +93,6 @@ export function RunnerProfileForm({ initial, units: initialUnits, onSave, onCanc
       <Text style={[styles.fieldLabel, { color: c.muted }]}>{label}</Text>
       <View style={[styles.field, { backgroundColor: c.surfaceAlt, borderColor: c.border }]}>
         <TextInput
-          inputAccessoryViewID={DONE_ID}
           value={value}
           onChangeText={(v) => {
             onChange(v.replace(/[^0-9.]/g, ''));
