@@ -15,10 +15,12 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { confirmDestructive } from '../confirm';
 import type { Food, FoodsStore } from '../foods';
 import { parseMacroInput } from '../macroInput';
+import type { LabelReading } from '../nutrition/parseLabel';
 import { canScanLabels, useLabelScan, type ScanSource } from '../nutrition/useLabelScan';
 import { calories, MAX_NAME } from '../storage';
 import { formatGrams, formatNumber, MACROS, useTheme, type MacroKey } from '../theme';
 import { EMPTY_MACRO_DRAFT, MacroInputs, toMacroDraft, type MacroDraft } from './MacroInputs';
+import { LabelCamera } from './LabelCamera';
 import { ScanButtons } from './ScanButtons';
 import { DONE_ID } from './KeyboardDone';
 import { KeyboardDoneBar } from './KeyboardDone';
@@ -189,14 +191,14 @@ function FoodForm({
   onDelete?: () => void;
 }) {
   const { c } = useTheme();
-  const { state, scan } = useLabelScan();
+  const { state, requestCamera, read, scanLibrary } = useLabelScan();
+  const [cameraOpen, setCameraOpen] = useState(false);
   const [name, setName] = useState(food?.name ?? '');
   const [draft, setDraft] = useState<MacroDraft>(food ? toMacroDraft(food) : EMPTY_MACRO_DRAFT);
   const [serving, setServing] = useState(food?.serving ?? '');
   const [missing, setMissing] = useState<MacroKey[]>([]);
 
-  const handleScan = async (source: ScanSource) => {
-    const reading = await scan(source);
+  const fill = (reading: LabelReading | null) => {
     if (!reading) return;
     setDraft({
       c: reading.c !== undefined ? String(reading.c) : '',
@@ -205,6 +207,14 @@ function FoodForm({
     });
     setMissing((['c', 'p', 'f'] as MacroKey[]).filter((k) => reading[k] === undefined));
     if (reading.servingSize) setServing(reading.servingSize);
+  };
+
+  const handleScan = async (source: ScanSource) => {
+    if (source === 'library') {
+      fill(await scanLibrary());
+      return;
+    }
+    if (await requestCamera()) setCameraOpen(true);
   };
 
   const values = {
@@ -260,6 +270,14 @@ function FoodForm({
             FILL FROM A LABEL
           </Text>
           <ScanButtons state={state} onScan={(s) => void handleScan(s)} />
+          <LabelCamera
+            visible={cameraOpen}
+            onPhoto={(uri) => {
+              setCameraOpen(false);
+              void read(uri).then(fill);
+            }}
+            onClose={() => setCameraOpen(false)}
+          />
         </>
       ) : null}
 

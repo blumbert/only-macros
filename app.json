@@ -43,6 +43,14 @@
         }
       ],
       [
+        "expo-camera",
+        {
+          "cameraPermission": "Macros uses the camera to read the numbers off a nutrition facts label. The photo is read on your phone and isn't saved.",
+          "microphonePermission": false,
+          "recordAudioAndroid": false
+        }
+      ],
+      [
         "@kingstinct/react-native-healthkit",
         {
           "NSHealthShareUsageDescription": "Macros reads your running workouts from Apple Health to fill in how far you ran each day, which sets your calorie targets. It's read on your phone and never sent anywhere.",

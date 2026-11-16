@@ -150,22 +150,16 @@ function Screen() {
   const searchUnlocked = premium.premium;
   const runnerUnlocked = premium.premium || premium.grandfathered;
   const menuItems: MenuItem[] = [
+    // Scanning a label and Runner fueling have their own buttons beside the
+    // menu, so they aren't repeated in it.
     { key: 'calendar', label: 'Calendar', icon: 'calendar-outline', onPress: () => setPage('calendar') },
-    { key: 'label', label: 'Scan a label', icon: 'scan-outline', onPress: () => setPage('label') },
+    { key: 'foods', label: 'Saved foods', icon: 'bookmark-outline', onPress: () => setPage('foods') },
     {
       key: 'search',
       label: 'Smart Search',
       icon: 'sparkles-outline',
       badge: searchUnlocked ? undefined : 'Premium',
       onPress: () => setPage(searchUnlocked ? 'search' : 'premium'),
-    },
-    { key: 'foods', label: 'Saved foods', icon: 'bookmark-outline', onPress: () => setPage('foods') },
-    {
-      key: 'runner',
-      label: 'Runner fueling',
-      icon: 'footsteps-outline',
-      badge: runnerUnlocked ? undefined : 'Premium',
-      onPress: () => setPage(runnerUnlocked ? 'runner' : 'premium'),
     },
     {
       key: 'premium',
@@ -369,6 +363,7 @@ function Screen() {
 
       <LabelSheet
         visible={page === 'label'}
+        openCamera
         onClose={closePage}
         today={today}
         onAdd={addOn}

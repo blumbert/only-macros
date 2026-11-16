@@ -1,3 +1,4 @@
+import { Camera } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
 import { useCallback, useRef, useState } from 'react';
 
@@ -15,43 +16,42 @@ export type ScanState =
 /** Whether this build can read labels at all. Expo Go and the web can't. */
 export const canScanLabels = canRecognizeText;
 
+/** A photo from the library, or null if the runner backed out. */
+export async function pickPhoto(): Promise<string | null> {
+  const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 1 });
+  return result.canceled || !result.assets?.length ? null : result.assets[0].uri;
+}
+
 /**
- * Take or choose a photo of a nutrition facts label and read it, all on the
- * phone. The photo is only ever a temporary file the picker made; nothing
- * keeps it once the text is read.
+ * Read a photo of a nutrition facts label, all on the phone. Photos come from
+ * the app's own camera (LabelCamera) or the library; either way they're only
+ * temporary files, and nothing keeps them once the text is read.
  */
 export function useLabelScan() {
   const [state, setState] = useState<ScanState>({ status: 'idle' });
-  // A second tap while the first scan is still going would race it.
+  // A second photo while the first is still being read would race it.
   const busy = useRef(false);
 
-  const scan = useCallback(async (source: ScanSource): Promise<LabelReading | null> => {
+  /** Asks for the camera if it hasn't been asked yet; says why when it's refused. */
+  const requestCamera = useCallback(async (): Promise<boolean> => {
+    const permission = await Camera.requestCameraPermissionsAsync();
+    if (permission.granted) return true;
+    setState({
+      status: 'error',
+      message: permission.canAskAgain
+        ? 'Macros needs the camera to read a label. You can choose a photo instead.'
+        : 'Camera access is off for Macros. Turn it on in Settings, or choose a photo instead.',
+      settings: !permission.canAskAgain,
+    });
+    return false;
+  }, []);
+
+  const read = useCallback(async (uri: string): Promise<LabelReading | null> => {
     if (busy.current) return null;
     busy.current = true;
     try {
-      if (source === 'camera') {
-        const permission = await ImagePicker.requestCameraPermissionsAsync();
-        if (!permission.granted) {
-          setState({
-            status: 'error',
-            message: permission.canAskAgain
-              ? 'Macros needs the camera to read a label. You can choose a photo instead.'
-              : 'Camera access is off for Macros. Turn it on in Settings, or choose a photo instead.',
-            settings: !permission.canAskAgain,
-          });
-          return null;
-        }
-      }
-
-      const options: ImagePicker.ImagePickerOptions = { mediaTypes: ['images'], quality: 1 };
-      const result =
-        source === 'camera'
-          ? await ImagePicker.launchCameraAsync(options)
-          : await ImagePicker.launchImageLibraryAsync(options);
-      if (result.canceled || !result.assets?.length) return null;
-
       setState({ status: 'reading' });
-      const lines = await recognizeText(result.assets[0].uri);
+      const lines = await recognizeText(uri);
       const reading = parseLabel(lines);
       if (reading.c === undefined && reading.p === undefined && reading.f === undefined) {
         setState({
@@ -67,7 +67,7 @@ export function useLabelScan() {
     } catch {
       setState({
         status: 'error',
-        message: "Something went wrong reading that photo. Try again, or type the numbers in.",
+        message: 'Something went wrong reading that photo. Try again, or type the numbers in.',
       });
       return null;
     } finally {
@@ -75,7 +75,21 @@ export function useLabelScan() {
     }
   }, []);
 
+  /** Choose a photo from the library and read it. */
+  const scanLibrary = useCallback(async (): Promise<LabelReading | null> => {
+    try {
+      const uri = await pickPhoto();
+      return uri ? read(uri) : null;
+    } catch {
+      setState({
+        status: 'error',
+        message: "Couldn't open your photos. Try again, or type the numbers in.",
+      });
+      return null;
+    }
+  }, [read]);
+
   const reset = useCallback(() => setState({ status: 'idle' }), []);
 
-  return { state, scan, reset };
+  return { state, requestCamera, read, scanLibrary, reset };
 }
