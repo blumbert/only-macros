@@ -37,6 +37,7 @@ import { scale } from './src/nutrition/parseLabel';
 import { usePremium } from './src/premium/usePremium';
 import { sumDay } from './src/storage';
 import { formatGrams, MACROS, useTheme, type MacroKey } from './src/theme';
+import { useOtaUpdates } from './src/updates';
 import { useLog } from './src/useLog';
 import { KeyboardScrollView } from './src/components/KeyboardDone';
 
@@ -55,6 +56,8 @@ const draftFor = (food: Food, servings: number): Draft => {
 };
 
 export default function App() {
+  // Over-the-air updates from our own server (see src/updates.ts).
+  useOtaUpdates();
   // initialMetrics matters: without it SafeAreaProvider renders *null* until
   // the native side reports insets back, so anything that delays or drops that
   // callback leaves the user staring at an empty screen.

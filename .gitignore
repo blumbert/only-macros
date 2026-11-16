@@ -39,3 +39,7 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# OTA update signing: the private key never leaves this machine; the certificate ships in the app
+.keys/
+!certs/certificate.pem

@@ -1,6 +1,6 @@
 # Privacy Policy — Only Macros
 
-_Last updated: 9 November 2026_
+_Last updated: 16 November 2026_
 
 ## Short version
 
@@ -16,7 +16,8 @@ Two optional parts of Only Macros Premium use the network:
   RevenueCat using a random ID that isn't tied to your name, email or Apple ID.
 
 If you don't use AI food search, the app sends nothing anywhere except that
-subscription check.
+subscription check and a check for app updates, which goes to the app's own
+server and carries nothing about you.
 
 ## What the app stores on your phone
 
@@ -70,6 +71,14 @@ dates and price) under that ID. It is not linked to your name, email or any
 contact information. RevenueCat's privacy policy is at
 https://www.revenuecat.com/privacy.
 
+## App updates
+
+When it opens, the app asks the app's own server (run on Cloudflare) whether a
+newer version of its code is available, and downloads it if so. The request
+carries the app's version and a random ID the app creates when it's installed, nothing
+you've logged and nothing tied to you. The server doesn't keep or log either.
+Updates are signed, and the app installs only ones signed by the developer.
+
 ## Apple Health
 
 If you connect Apple Health on the Runner fueling page, the app reads your
@@ -98,7 +107,7 @@ your own device settings; the developer has no access to it.
 
 - **Anthropic** (Claude): receives the descriptions you type into AI food
   search, as described above.
-- **Cloudflare**: runs the app's AI search server.
+- **Cloudflare**: runs the app's AI search and update servers.
 - **RevenueCat**: checks subscriptions, as described above.
 
 The app includes no analytics SDK, no advertising SDK, no crash reporting, and

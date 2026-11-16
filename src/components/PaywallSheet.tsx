@@ -5,6 +5,7 @@ import { ActivityIndicator, Alert, Linking, Pressable, StyleSheet, Text, View } 
 import { MANAGE_SUBSCRIPTIONS_URL, PRIVACY_URL, TERMS_URL } from '../links';
 import { getPlans, purchase, restore, type Plan, type PurchaseResult } from '../premium/purchases';
 import { useTheme } from '../theme';
+import { useTestChannel, versionLabel } from '../updates';
 import { Sheet } from './Sheet';
 
 type Props = {
@@ -214,11 +215,45 @@ export function PaywallSheet({ visible, onClose, premium, managementUrl, onChang
           Privacy Policy
         </Text>
       </View>
+
+      <VersionLine />
     </Sheet>
   );
 }
 
+/**
+ * Which version and update is running. Holding it for two seconds switches this
+ * phone onto the test channel, for trying an update before everyone gets it.
+ */
+function VersionLine() {
+  const { c } = useTheme();
+  const test = useTestChannel();
+  const label = versionLabel();
+  if (!label) return null;
+  return (
+    <Pressable
+      onLongPress={() => {
+        void test.toggle().then(() =>
+          Alert.alert(
+            test.on ? 'Test updates off' : 'Test updates on',
+            test.on
+              ? 'This phone gets the same updates as everyone again.'
+              : 'This phone now gets test updates. Close and reopen the app to load the newest one.',
+          ),
+        );
+      }}
+      delayLongPress={2000}
+    >
+      <Text style={[styles.version, { color: c.faint }]}>
+        Version {label}
+        {test.on ? ' · test' : ''}
+      </Text>
+    </Pressable>
+  );
+}
+
 const styles = StyleSheet.create({
+  version: { fontSize: 11, fontWeight: '500', textAlign: 'center', marginTop: 14 },
   headline: { fontSize: 24, fontWeight: '800', letterSpacing: -0.4, marginTop: 4, paddingHorizontal: 4 },
   card: {
     marginTop: 14,

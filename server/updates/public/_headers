@@ -1,0 +1,6 @@
+# Update files are named by their content, so they never change.
+/u/*
+  Cache-Control: public, max-age=31536000, immutable
+# The manifests change with every publish and are only read through /manifest.
+/m/*
+  Cache-Control: no-store

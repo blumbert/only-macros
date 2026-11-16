@@ -1,0 +1,15 @@
+{
+  // Only Macros over-the-air updates: a self-hosted Expo Updates (protocol v1)
+  // server, so the app never talks to Expo's servers. Published updates live in
+  // ./public as static files; `npm run update:preview` / `update:production` in
+  // the app's root writes them there and deploys this folder.
+  //
+  // Nothing is logged or stored about who asks. The app sends a random install
+  // id (EAS-Client-ID) with every request; this Worker never reads it.
+  "name": "only-macros-updates",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-11-01",
+  "workers_dev": true,
+  "assets": { "directory": "./public", "binding": "ASSETS" },
+  "observability": { "enabled": false }
+}
