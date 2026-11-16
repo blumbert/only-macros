@@ -584,6 +584,18 @@ function DayTargetsCard({
                   <Text style={[styles.vsValue, { color: c.muted }]}>
                     {formatNumber(Math.round(eatenToday[m.key]))}
                     <Text style={[styles.unit, { color: c.faint }]}>g</Text>
+                    {/* How today compares with its target: green over, red under. */}
+                    {(() => {
+                      const diff = Math.round(eatenToday[m.key]) - grams[m.key];
+                      if (diff === 0) return null;
+                      return (
+                        <Text style={[styles.diff, { color: diff > 0 ? '#1F9D55' : '#E5484D' }]}>
+                          {' '}
+                          {diff > 0 ? '+' : '−'}
+                          {formatNumber(Math.abs(diff))}
+                        </Text>
+                      );
+                    })()}
                   </Text>
                 </View>
               ))}
@@ -943,6 +955,7 @@ const styles = StyleSheet.create({
   vsRow: { marginTop: 6, alignItems: 'baseline' },
   sideCol: { width: 48, justifyContent: 'flex-end' },
   vsLabel: { fontSize: 12, fontWeight: '700' },
+  diff: { fontSize: 11, fontWeight: '700' },
   vsValue: { fontSize: 18, fontWeight: '700', fontVariant: ['tabular-nums'] },
   macroLetter: { fontSize: 13, fontWeight: '800', letterSpacing: 1, marginBottom: 2 },
   macroValue: { fontSize: 30, fontWeight: '800', fontVariant: ['tabular-nums'] },
