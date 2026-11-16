@@ -959,7 +959,7 @@ function Signs() {
 }
 
 const styles = StyleSheet.create({
-  sectionTitle: { fontSize: 22, fontWeight: '800', letterSpacing: -0.3, marginTop: 18, marginBottom: 2, paddingHorizontal: 4 },
+  sectionTitle: { fontSize: 22, fontWeight: '800', letterSpacing: -0.3, marginTop: 18, marginBottom: 2, textAlign: 'center' },
   sheet: { flex: 1 },
   flex: { flex: 1 },
   sheetHeader: {
