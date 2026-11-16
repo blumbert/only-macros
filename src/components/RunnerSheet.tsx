@@ -261,6 +261,12 @@ export function RunnerSheet({ visible, onClose, log, today }: Props) {
                     xtKcal={xtKcal}
                     onSetXt={runner.setDayXt}
                   />
+                  <TrainingWeekEditor
+                    weeks={runner.weeks}
+                    today={today}
+                    units={runner.units}
+                    onChange={runner.setWeek}
+                  />
                   {canUseHealth ? (
                     <HealthCard
                       connected={healthConnected}
@@ -276,12 +282,6 @@ export function RunnerSheet({ visible, onClose, log, today }: Props) {
                       }}
                     />
                   ) : null}
-                  <TrainingWeekEditor
-                    weeks={runner.weeks}
-                    today={today}
-                    units={runner.units}
-                    onChange={runner.setWeek}
-                  />
                   <LastWeek
                     profile={profile}
                     log={log}
