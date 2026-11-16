@@ -308,6 +308,8 @@ export function RunnerSheet({ visible, onClose, log, today }: Props) {
                     units={runner.units}
                     onChange={runner.setWeek}
                     loggedFor={loggedFor}
+                    onSetDayKm={runner.setDayKm}
+                    onSetDayXt={runner.setDayXt}
                   />
                   {canUseHealth ? (
                     <HealthCard
@@ -425,7 +427,18 @@ function DayTargetsCard({
   const day = addDays(today, offset);
   // "How it's worked out" starts closed, and closes again on another day.
   useEffect(() => setShowWhy(false), [day]);
-  const plan = planFor(weeks, day, dayKm, today);
+  // A past day with no plan behind it still has targets: whatever was logged
+  // for it (a hand-set distance or Apple Health's), and a rest day if nothing was.
+  const loggedKm = dayKm[day];
+  const plan =
+    planFor(weeks, day, dayKm, today) ??
+    (day < today
+      ? {
+          type: (loggedKm ?? 0) > 0 ? ('easy' as const) : ('rest' as const),
+          km: loggedKm ?? 0,
+          set: manualKm[day] !== undefined,
+        }
+      : null);
   const found = weekFor(weeks, day);
   const problem = found ? checkWeek(found.week) : null;
   // A later week that hasn't been entered borrows the most recent one.

@@ -30,11 +30,23 @@ type Props = {
    * its cross-training. A week that's over shows these instead of the plan.
    */
   loggedFor?: (day: DayKey) => { km: number; xtMin: number; xtEffort: number | null };
+  /** Set or clear a day's own distance (null goes back to Health or the plan). */
+  onSetDayKm?: (day: DayKey, km: number | null) => void;
+  /** Set or clear a day's own cross-training. */
+  onSetDayXt?: (day: DayKey, xt: { min: number; effort: number } | null) => void;
 };
 
 const WEEKDAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
-export function TrainingWeekEditor({ weeks, today, units, onChange, loggedFor }: Props) {
+export function TrainingWeekEditor({
+  weeks,
+  today,
+  units,
+  onChange,
+  loggedFor,
+  onSetDayKm,
+  onSetDayXt,
+}: Props) {
   const { c } = useTheme();
   const thisWeek = weekKey(today);
   const [viewKey, setViewKey] = useState(thisWeek);
@@ -64,7 +76,8 @@ export function TrainingWeekEditor({ weeks, today, units, onChange, loggedFor }:
   };
   const showWhole = (n: number) => (n > 0 ? String(n) : '');
   useEffect(() => {
-    setMileage(show(week.km));
+    // A past week starts from the miles actually run.
+    setMileage(logged ? show(logged.reduce((sum, d) => sum + d.km, 0)) : show(week.km));
     setLongRun(show(week.longRunKm));
   }, [viewKey, units]);
 
@@ -85,21 +98,46 @@ export function TrainingWeekEditor({ weeks, today, units, onChange, loggedFor }:
     commit({ ...week, xt: { ...xt, effort: xt.effort.map((e, j) => (j === i ? value : e)) } });
   const efforts = optionRange(minEffort, maxEffort);
 
-  // A week that's over shows what was done, not what was planned: a day with
-  // no running is a rest day, the total is what was run, and cross-training is
-  // what was logged. Workouts and long runs aren't guessed at. It's read-only.
+  // A week that's over starts from what was done, not what was planned: a day
+  // with no running is a rest day, the total is what was run, and
+  // cross-training is what was logged. Workouts and long runs are only what
+  // was marked, never guessed. Changing a day changes that day's own record.
   const logged =
-    viewKey < thisWeek && loggedFor
+    viewKey < thisWeek && loggedFor && onSetDayKm && onSetDayXt
       ? WEEKDAY_INITIALS.map((_, i) => loggedFor(addDays(viewKey, i)))
       : null;
-  const shownDays: DayType[] = logged ? logged.map((d) => (d.km > 0 ? 'easy' : 'rest')) : week.days;
+  const shownDays: DayType[] = logged
+    ? logged.map((d, i) => (d.km <= 0 ? 'rest' : week.days[i] === 'rest' ? 'easy' : week.days[i]))
+    : week.days;
+  const dayOf = (i: number) => addDays(viewKey, i);
+  const toggleDay = (i: number, type: Exclude<DayType, 'easy'>) => {
+    if (!logged) {
+      commit({ ...week, days: setDayType(week.days, i, type) });
+      return;
+    }
+    if (type === 'rest') {
+      if (shownDays[i] === 'rest') {
+        // Ran after all: drop the "didn't run" and let Health or the plan say how far.
+        onSetDayKm!(dayOf(i), null);
+        if (week.days[i] === 'rest') commit({ ...week, days: setDayType(week.days, i, 'rest') });
+      } else onSetDayKm!(dayOf(i), 0);
+      return;
+    }
+    // Marking a run on a day that shows as rest means it was run.
+    if (shownDays[i] === 'rest') onSetDayKm!(dayOf(i), null);
+    commit({ ...week, days: setDayType(week.days, i, type) });
+  };
+  const setLoggedXtMin = (i: number, text: string) => {
+    const n = parseInt(text, 10);
+    const min = Number.isFinite(n) && n > 0 ? n : 0;
+    onSetDayXt!(dayOf(i), min > 0 ? { min, effort: logged![i].xtEffort ?? defaultEffort } : { min: 0, effort: defaultEffort });
+  };
   const shownXt: WeekXt = logged
     ? {
         min: logged.map((d) => Math.round(d.xtMin)),
         effort: logged.map((d) => d.xtEffort ?? defaultEffort),
       }
     : xt;
-  const shownMileage = logged ? show(logged.reduce((sum, d) => sum + d.km, 0)) : mileage;
   const problem = logged ? null : checkWeek(week);
 
   const rows: { type: Exclude<DayType, 'easy'>; label: string; color: string }[] = [
@@ -147,14 +185,13 @@ export function TrainingWeekEditor({ weeks, today, units, onChange, loggedFor }:
         <Field
           label={`Total ${units === 'imperial' ? 'miles' : 'km'}`}
           width={72}
-          value={shownMileage}
-          readOnly={!!logged}
+          value={mileage}
           onChange={(v) => {
             setMileage(v);
             commit({ ...week, km: toKm(v) });
           }}
         />
-        {hasLong && !logged ? (
+        {hasLong ? (
           <Field
             label={`Long run ${unit}`}
             value={longRun}
@@ -189,8 +226,7 @@ export function TrainingWeekEditor({ weeks, today, units, onChange, loggedFor }:
               return (
                 <Pressable
                   key={i}
-                  disabled={!!logged}
-                  onPress={() => commit({ ...week, days: setDayType(week.days, i, row.type) })}
+                  onPress={() => toggleDay(i, row.type)}
                   accessibilityRole="checkbox"
                   accessibilityState={{ checked: on }}
                   accessibilityLabel={`${row.label}: ${WEEKDAY_NAMES[i]}`}
@@ -223,10 +259,13 @@ export function TrainingWeekEditor({ weeks, today, units, onChange, loggedFor }:
             return (
               <DoneTextInput
                 key={i}
-                editable={!logged}
                 maxFontSizeMultiplier={1.2}
                 value={showWhole(shownXt.min[i])}
-                onChangeText={(v) => setXtMin(i, v.replace(/[^0-9]/g, ''))}
+                onChangeText={(v) =>
+                  logged
+                    ? setLoggedXtMin(i, v.replace(/[^0-9]/g, ''))
+                    : setXtMin(i, v.replace(/[^0-9]/g, ''))
+                }
                 keyboardType="number-pad"
                 inputMode="numeric"
                 maxLength={3}
@@ -251,21 +290,20 @@ export function TrainingWeekEditor({ weeks, today, units, onChange, loggedFor }:
         <Text style={[styles.rowLabel, { color: c.muted }]}>Effort</Text>
         <View style={styles.chips}>
           {WEEKDAY_INITIALS.map((_, i) =>
-            shownXt.min[i] > 0 && logged ? (
-              <View key={i} style={[styles.effortBox, { borderColor: c.border }]}>
-                <Text style={[styles.effortText, { color: c.text }]}>
-                  {logged[i].xtEffort ?? '–'}
-                </Text>
-              </View>
-            ) : shownXt.min[i] > 0 ? (
+            shownXt.min[i] > 0 ? (
               <Dropdown
                 key={`${viewKey}-${i}`}
                 compact
                 width={34}
                 label={`Cross-training effort, ${WEEKDAY_NAMES[i]}`}
-                value={xt.effort[i]}
+                value={shownXt.effort[i]}
+                display={logged && logged[i].xtEffort === null ? '–' : undefined}
                 options={efforts}
-                onChange={(n) => setXtEffort(i, n)}
+                onChange={(n) =>
+                  logged
+                    ? onSetDayXt!(dayOf(i), { min: shownXt.min[i], effort: n })
+                    : setXtEffort(i, n)
+                }
               />
             ) : (
               <View key={i} style={styles.chipGap} />
@@ -341,7 +379,6 @@ function Field({
   whole = false,
   maxLength = 5,
   width,
-  readOnly = false,
 }: {
   label: string;
   value: string;
@@ -351,8 +388,6 @@ function Field({
   maxLength?: number;
   /** A fixed width, for a short number; otherwise the field shares the row. */
   width?: number;
-  /** Shows a number that can't be changed here, like a past week's total. */
-  readOnly?: boolean;
 }) {
   const { c } = useTheme();
   return (
@@ -368,7 +403,6 @@ function Field({
         placeholder="0"
         placeholderTextColor={c.faint}
         maxLength={maxLength}
-        editable={!readOnly}
         accessibilityLabel={label}
         style={[
           styles.fieldInput,
@@ -380,15 +414,6 @@ function Field({
 }
 
 const styles = StyleSheet.create({
-  effortBox: {
-    width: 34,
-    height: 26,
-    borderRadius: 8,
-    borderWidth: StyleSheet.hairlineWidth * 2,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  effortText: { fontSize: 12, fontWeight: '700', fontVariant: ['tabular-nums'] },
   card: {
     // Above the cards that follow, so an open effort list floats over them.
     zIndex: 10,
