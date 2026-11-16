@@ -9,10 +9,13 @@ what someone would notice.
 
 ## How to ship
 
-Every change goes out as an App Store release. The app has no update
-mechanism of its own. (Over-the-air updates were tried for 1.0.3 and taken
-back out: `expo-updates` requires declaring Crash Data, and the only network
-use is meant to stay RevenueCat and Smart Search.)
+From 1.0.10, JavaScript-only bug fixes can go out as over-the-air updates
+from our own server (`server/updates`), never Expo's: `npm run update:preview`,
+check it on a phone switched to the test channel (hold the version line on the
+Premium page for 2 seconds), then `npm run update:promote`. Anything native, or
+a new feature, still goes out as an App Store release. (EAS Update was tried for
+1.0.3 and taken back out because Expo's hosted service means declaring Crash
+Data; the self-hosted server collects nothing.)
 
 The AI search server (`server/ai-search`) deploys separately with
 `npx wrangler deploy` from that folder, and needs no app release.
