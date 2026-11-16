@@ -521,7 +521,7 @@ function DayTargetsCard({
 
       {/* The day's training, side by side: the run, and cross-training. */}
       <View style={styles.training}>
-        <View style={[styles.trainingCol, styles.trainingColNarrow]}>
+        <View style={styles.trainingCol}>
           <Text style={[styles.trainingLabel, { color: c.muted }]}>RUNNING</Text>
           <View style={styles.pickRow}>
             <Dropdown
@@ -547,7 +547,7 @@ function DayTargetsCard({
           </View>
         </View>
         <View style={[styles.trainingDivider, { backgroundColor: c.border }]} />
-        <View style={[styles.trainingCol, styles.trainingColWide]}>
+        <View style={styles.trainingCol}>
           <Text style={[styles.trainingLabel, { color: c.muted }]}>CROSS-TRAINING</Text>
           <View style={styles.pickRow}>
             <DoneTextInput
@@ -592,13 +592,9 @@ function DayTargetsCard({
 
       {/* One heading over the numbers; carbs, protein, fat, then calories. The
           second row is what was logged that day (so far, for today). */}
-      {/* Centered over the three macro columns, not the calories. */}
-      <View style={styles.tvtRow}>
-        <Text style={[styles.tvtHead, { color: c.muted }]}>
-          {offset > 0 ? 'Targets (g)' : offset === 0 ? 'Targets vs today (g)' : 'Targets vs logged (g)'}
-        </Text>
-        <View style={styles.macroCol} />
-      </View>
+      <Text style={[styles.tvtHead, { color: c.muted }]}>
+        {offset > 0 ? 'Targets (g)' : offset === 0 ? 'Targets vs today (g)' : 'Targets vs logged (g)'}
+      </Text>
       <View style={styles.macroRow}>
         {COLUMNS.map((m) => (
           <View key={m.key} style={styles.macroCol}>
@@ -928,8 +924,7 @@ const styles = StyleSheet.create({
   macroCol: { flex: 1, alignItems: 'center' },
   valueRow: { flexDirection: 'row', alignItems: 'baseline' },
   vsRow: { marginTop: 6, alignItems: 'baseline' },
-  tvtRow: { flexDirection: 'row', marginTop: 12 },
-  tvtHead: { flex: 3, textAlign: 'center', fontSize: 12, fontWeight: '700' },
+  tvtHead: { textAlign: 'center', fontSize: 12, fontWeight: '700', marginTop: 12 },
   kcalValue: { fontSize: 22, fontWeight: '800', fontVariant: ['tabular-nums'] },
   diff: { fontSize: 11, fontWeight: '700' },
   vsValue: { fontSize: 18, fontWeight: '700', fontVariant: ['tabular-nums'] },
@@ -971,8 +966,6 @@ const styles = StyleSheet.create({
     fontVariant: ['tabular-nums'],
   },
   // The run needs less room than cross-training's two wider boxes.
-  trainingColNarrow: { flex: 0.85 },
-  trainingColWide: { flex: 1.15 },
   trainingLabel: { fontSize: 10, fontWeight: '700', letterSpacing: 0.8 },
   trainingDivider: { width: StyleSheet.hairlineWidth * 2, marginHorizontal: 8 },
   warnings: { marginTop: 10, gap: 8 },
