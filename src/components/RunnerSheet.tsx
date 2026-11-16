@@ -388,6 +388,8 @@ function DayTargetsCard({
   const [showWhy, setShowWhy] = useState(false);
 
   const day = addDays(today, offset);
+  // "How it's worked out" starts closed, and closes again on another day.
+  useEffect(() => setShowWhy(false), [day]);
   const plan = planFor(weeks, day, dayKm, today);
   const found = weekFor(weeks, day);
   const problem = found ? checkWeek(found.week) : null;
