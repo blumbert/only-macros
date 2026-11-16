@@ -36,7 +36,7 @@ import {
   weekFor,
   type DayKm,
 } from '../fueling/training';
-import { isEmpty, sumDay, type Log, type Totals } from '../storage';
+import { sumDay, type Log } from '../storage';
 import { formatNumber, MACROS, useTheme } from '../theme';
 import { DoneTextInput } from './DoneTextInput';
 import { Dropdown, range as optionRange } from './Dropdown';
@@ -465,7 +465,7 @@ function DayTargetsCard({
   const distancePicked = manualKm[day] !== undefined;
 
   const grams = { c: t.carbsG, p: t.proteinG, f: t.fatG };
-  const eatenToday = sumDay(log[today]);
+  const eaten = sumDay(log[day]);
   const range = RULES.carbs[plan.type];
   const carbsPerKg = Math.round((t.carbsG / profile.weightKg) * 10) / 10;
   const proteinPerKg = Math.round((t.proteinG / profile.weightKg) * 10) / 10;
@@ -573,12 +573,10 @@ function DayTargetsCard({
       </View>
 
 
-      {past ? (
-        <Compare target={grams} eaten={sumDay(log[day])} />
-      ) : (
-        <>
+      <>
           {/* Just carbs, protein and fat: calories are only what they add up
-              to. "Target" and "Today" label the rows on the left. */}
+              to. "Target" labels the first row; the second is what was logged,
+              today or on a past day. */}
           <View style={styles.macroRow}>
             <View style={styles.sideCol} />
             {MACROS.map((m) => (
@@ -600,20 +598,22 @@ function DayTargetsCard({
               </View>
             ))}
           </View>
-          {/* What's been logged today so far, under what's recommended. */}
-          {offset === 0 ? (
+          {/* What was logged that day (so far, for today), under the target. */}
+          {offset <= 0 ? (
             <View style={[styles.macroRow, styles.vsRow]}>
               <View style={styles.sideCol}>
-                <Text style={[styles.vsLabel, { color: c.muted }]}>Today</Text>
+                <Text style={[styles.vsLabel, { color: c.muted }]}>
+                  {offset === 0 ? 'Today' : 'Logged'}
+                </Text>
               </View>
               {MACROS.map((m) => (
                 <View key={m.key} style={styles.macroCol}>
                   <Text style={[styles.vsValue, { color: c.muted }]}>
-                    {formatNumber(Math.round(eatenToday[m.key]))}
+                    {formatNumber(Math.round(eaten[m.key]))}
                     <Text style={[styles.unit, { color: c.faint }]}>g</Text>
-                    {/* How today compares with its target: green over, red under. */}
+                    {/* How the day compares with its target: green over, red under. */}
                     {(() => {
-                      const diff = Math.round(eatenToday[m.key]) - grams[m.key];
+                      const diff = Math.round(eaten[m.key]) - grams[m.key];
                       if (diff === 0) return null;
                       return (
                         <Text style={[styles.diff, { color: diff > 0 ? OVER_COLOR : UNDER_COLOR }]}>
@@ -628,8 +628,7 @@ function DayTargetsCard({
               ))}
             </View>
           ) : null}
-        </>
-      )}
+      </>
 
       {t.blocks.length && profile.goal === 'lose' ? (
         <View style={[styles.notice, { backgroundColor: c.surfaceAlt, borderColor: c.border }]}>
@@ -655,100 +654,24 @@ function DayTargetsCard({
         <Text style={[styles.sourcesToggleText, { color: c.muted }]}>How it&apos;s worked out</Text>
         <Ionicons name={showWhy ? 'chevron-up' : 'chevron-down'} size={14} color={c.muted} />
       </Pressable>
-      {showWhy
-        ? why.map((line) => (
+      {showWhy ? (
+        <>
+          {why.map((line) => (
             <Text key={line} style={[styles.why, { color: c.muted }]}>
               {line}
             </Text>
-          ))
-        : null}
-
-      {warnings.length ? (
-        <View style={styles.warnings}>
-          {warnings.map((w) => (
-            <View key={w} style={styles.warningRow}>
-              <Ionicons name="information-circle-outline" size={16} color={c.macro.c} />
-              <Text style={[styles.warningText, { color: c.muted }]}>{w}</Text>
-            </View>
           ))}
-        </View>
-      ) : null}
-    </View>
-  );
-}
-
-/**
- * A past day: what the page recommends for it next to what was logged. The
- * recommendation is worked out again from that day's distance as it stands
- * now, so a run filled in afterwards is what the food gets compared with.
- */
-function Compare({
-  target,
-  eaten,
-}: {
-  target: { c: number; p: number; f: number };
-  eaten: Totals;
-}) {
-  const { c } = useTheme();
-  const logged = !isEmpty(eaten);
-  const cols = MACROS.map((m) => ({
-    key: m.key,
-    head: m.letter,
-    color: c.macro[m.key],
-    target: target[m.key],
-    eaten: Math.round(eaten[m.key]),
-    unit: 'g',
-  }));
-  const signed = (n: number) => (n > 0 ? `+${formatNumber(n)}` : n < 0 ? `−${formatNumber(-n)}` : '0');
-
-  type Col = (typeof cols)[number];
-  const row = (
-    label: string,
-    value: (col: Col) => string,
-    color: string | ((col: Col) => string),
-    bold?: boolean,
-  ) => (
-    <View style={styles.compareRow}>
-      <Text style={[styles.compareLabel, { color: c.muted }]}>{label}</Text>
-      {cols.map((col) => (
-        <Text
-          key={col.key}
-          style={[
-            styles.compareValue,
-            bold && styles.compareBold,
-            { color: typeof color === 'function' ? color(col) : color },
-          ]}
-          numberOfLines={1}
-        >
-          {value(col)}
-        </Text>
-      ))}
-    </View>
-  );
-
-  return (
-    <View style={styles.compare}>
-      <View style={styles.compareRow}>
-        <Text style={styles.compareLabel} />
-        {cols.map((col) => (
-          <Text key={col.key} style={[styles.compareValue, styles.compareHead, { color: col.color }]}>
-            {col.head}
-          </Text>
-        ))}
-      </View>
-      {row('Recommended', (col) => `${formatNumber(col.target)}${col.unit}`, c.text, true)}
-      {row('Logged', (col) => (logged ? `${formatNumber(col.eaten)}${col.unit}` : '—'), c.text, true)}
-      {logged
-        ? row(
-            'Difference',
-            (col) => signed(col.eaten - col.target),
-            // Same as today's: green over the target, red under it.
-            (col) =>
-              col.eaten > col.target ? OVER_COLOR : col.eaten < col.target ? UNDER_COLOR : c.faint,
-          )
-        : null}
-      {!logged ? (
-        <Text style={[styles.why, { color: c.faint }]}>Nothing was logged this day.</Text>
+          {warnings.length ? (
+            <View style={styles.warnings}>
+              {warnings.map((w) => (
+                <View key={w} style={styles.warningRow}>
+                  <Ionicons name="information-circle-outline" size={16} color={c.macro.c} />
+                  <Text style={[styles.warningText, { color: c.muted }]}>{w}</Text>
+                </View>
+              ))}
+            </View>
+          ) : null}
+        </>
       ) : null}
     </View>
   );
@@ -1000,12 +923,6 @@ const styles = StyleSheet.create({
   vsValue: { fontSize: 18, fontWeight: '700', fontVariant: ['tabular-nums'] },
   macroLetter: { fontSize: 13, fontWeight: '800', letterSpacing: 1, marginBottom: 2 },
   macroValue: { fontSize: 30, fontWeight: '800', fontVariant: ['tabular-nums'] },
-  compare: { marginTop: 12, gap: 6 },
-  compareRow: { flexDirection: 'row', alignItems: 'baseline' },
-  compareLabel: { flex: 1.5, fontSize: 12, fontWeight: '600' },
-  compareHead: { fontSize: 11, fontWeight: '800', letterSpacing: 1 },
-  compareValue: { flex: 1, textAlign: 'right', fontSize: 13, fontWeight: '500', fontVariant: ['tabular-nums'] },
-  compareBold: { fontSize: 15, fontWeight: '700' },
   divider: { height: StyleSheet.hairlineWidth, marginTop: 14, marginBottom: 6 },
   why: { fontSize: 12, fontWeight: '500', lineHeight: 17, marginTop: 6 },
   notice: {
