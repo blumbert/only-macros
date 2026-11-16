@@ -76,6 +76,8 @@ function dayHeading(day: DayKey, offset: number): string {
 
 /** Logged against a target: green over it, red under it. */
 const OVER_COLOR = '#1F9D55';
+/** Narrowest half of the training row that still fits cross-training on one line. */
+const NARROW_COL = 120;
 /** The day card's columns: the three macros, then the calories they add up to. */
 const COLUMNS = [
   ...MACROS.map((m) => ({ key: m.key, letter: m.letter })),
@@ -396,6 +398,7 @@ function DayTargetsCard({
   useEffect(() => setOffset(0), [today]);
   // The reasoning behind the numbers, folded away until asked for.
   const [showWhy, setShowWhy] = useState(false);
+  const [narrow, setNarrow] = useState(false);
 
   const day = addDays(today, offset);
   // "How it's worked out" starts closed, and closes again on another day.
@@ -519,72 +522,83 @@ function DayTargetsCard({
     <View style={[styles.card, styles.raisedCard, { backgroundColor: c.surface, borderColor: c.border }]}>
       {header}
 
-      {/* The day's training, side by side: the run, and cross-training. */}
-      <View style={styles.training}>
+      {/* The day's training, side by side: the run, and cross-training. Each
+          field keeps its unit beside it; on a screen too narrow for that, the
+          units go under the fields instead of the row wrapping. */}
+      <View
+        style={styles.training}
+        onLayout={(e) => setNarrow((e.nativeEvent.layout.width - 18) / 2 < NARROW_COL)}
+      >
         <View style={styles.trainingCol}>
           <Text style={[styles.trainingLabel, { color: c.muted }]}>RUNNING</Text>
-          <View style={styles.pickRow}>
-            <Dropdown
-              key={`whole-${day}`}
-              label={imperial ? 'Miles' : 'Kilometres'}
-              value={wholePart}
-              options={optionRange(0, Math.max(99, wholePart))}
-              onChange={(w) => setDistance(w, tenthPart)}
-              muted={!distancePicked}
-              width={44}
-            />
-            <Text style={[styles.unit, { color: c.faint }]}>.</Text>
-            <Dropdown
-              key={`tenth-${day}`}
-              label="Tenths"
-              value={tenthPart}
-              options={optionRange(0, 9)}
-              onChange={(tn) => setDistance(wholePart, tn)}
-              muted={!distancePicked}
-              width={36}
-            />
+          <View style={narrow ? styles.fieldStacked : styles.fieldInline}>
+            <View style={styles.fieldInline}>
+              <Dropdown
+                key={`whole-${day}`}
+                label={imperial ? 'Miles' : 'Kilometres'}
+                value={wholePart}
+                options={optionRange(0, Math.max(99, wholePart))}
+                onChange={(w) => setDistance(w, tenthPart)}
+                muted={!distancePicked}
+                width={40}
+              />
+              <Text style={[styles.unit, { color: c.faint }]}>.</Text>
+              <Dropdown
+                key={`tenth-${day}`}
+                label="Tenths"
+                value={tenthPart}
+                options={optionRange(0, 9)}
+                onChange={(tn) => setDistance(wholePart, tn)}
+                muted={!distancePicked}
+                width={32}
+              />
+            </View>
             <Text numberOfLines={1} style={[styles.unit, { color: c.faint }]}>{unit}</Text>
           </View>
         </View>
         <View style={[styles.trainingDivider, { backgroundColor: c.border }]} />
         <View style={styles.trainingCol}>
           <Text style={[styles.trainingLabel, { color: c.muted }]}>CROSS-TRAINING</Text>
-          <View style={styles.pickRow}>
-            <DoneTextInput
-              key={`min-${day}`}
-              // Minutes from the plan or Apple Health show as the gray
-              // placeholder until the runner types their own.
-              value={!xtFromPlan && xt.min > 0 ? String(xt.min) : ''}
-              onChangeText={(v) => {
-                const n = parseInt(v.replace(/[^0-9]/g, ''), 10);
-                const min = Number.isFinite(n) ? Math.min(n, XT_MAX_MIN) : 0;
-                onSetXt(day, { min, effort: xt.effort ?? RULES.crossTraining.defaultEffort });
-              }}
-              keyboardType="number-pad"
-              inputMode="numeric"
-              maxLength={3}
-              placeholder={xtFromPlan ? String(xt.min) : '0'}
-              placeholderTextColor={c.faint}
-              selectTextOnFocus
-              maxFontSizeMultiplier={1.2}
-              accessibilityLabel="Cross-training minutes"
-              style={[
-                styles.minutesBox,
-                { color: c.text, backgroundColor: c.surfaceAlt, borderColor: c.border },
-              ]}
-            />
-            <Text numberOfLines={1} style={[styles.unit, { color: c.faint }]}>min</Text>
-            <Dropdown
-              key={`effort-${day}`}
-              label="Effort, 1 to 10"
-              value={xt.effort ?? RULES.crossTraining.defaultEffort}
-              display={xt.min > 0 && xt.effort === null ? '–' : undefined}
-              options={optionRange(RULES.crossTraining.minEffort, RULES.crossTraining.maxEffort)}
-              onChange={(effort) => onSetXt(day, { min: xt.min, effort })}
-              muted={xtFromPlan}
-              width={38}
-            />
-            <Text numberOfLines={1} style={[styles.unit, { color: c.faint }]}>rpe</Text>
+          <View style={styles.crossRow}>
+            <View style={narrow ? styles.fieldStacked : styles.fieldInline}>
+              <DoneTextInput
+                key={`min-${day}`}
+                // Minutes from the plan or Apple Health show as the gray
+                // placeholder until the runner types their own.
+                value={!xtFromPlan && xt.min > 0 ? String(xt.min) : ''}
+                onChangeText={(v) => {
+                  const n = parseInt(v.replace(/[^0-9]/g, ''), 10);
+                  const min = Number.isFinite(n) ? Math.min(n, XT_MAX_MIN) : 0;
+                  onSetXt(day, { min, effort: xt.effort ?? RULES.crossTraining.defaultEffort });
+                }}
+                keyboardType="number-pad"
+                inputMode="numeric"
+                maxLength={3}
+                placeholder={xtFromPlan ? String(xt.min) : '0'}
+                placeholderTextColor={c.faint}
+                selectTextOnFocus
+                maxFontSizeMultiplier={1.2}
+                accessibilityLabel="Cross-training minutes"
+                style={[
+                  styles.minutesBox,
+                  { color: c.text, backgroundColor: c.surfaceAlt, borderColor: c.border },
+                ]}
+              />
+              <Text numberOfLines={1} style={[styles.unit, { color: c.faint }]}>min</Text>
+            </View>
+            <View style={narrow ? styles.fieldStacked : styles.fieldInline}>
+              <Dropdown
+                key={`effort-${day}`}
+                label="Effort, 1 to 10"
+                value={xt.effort ?? RULES.crossTraining.defaultEffort}
+                display={xt.min > 0 && xt.effort === null ? '–' : undefined}
+                options={optionRange(RULES.crossTraining.minEffort, RULES.crossTraining.maxEffort)}
+                onChange={(effort) => onSetXt(day, { min: xt.min, effort })}
+                muted={xtFromPlan}
+                width={34}
+              />
+              <Text numberOfLines={1} style={[styles.unit, { color: c.faint }]}>rpe</Text>
+            </View>
           </View>
         </View>
       </View>
@@ -929,10 +943,10 @@ const styles = StyleSheet.create({
   valueRow: { flexDirection: 'row', alignItems: 'baseline' },
   vsRow: { marginTop: 6, alignItems: 'baseline' },
   tvtHead: { textAlign: 'center', fontSize: 12, fontWeight: '700', marginTop: 12 },
-  // Calories run to four digits plus a four-digit difference, so their column is wider.
-  kcalCol: { flex: 1.4 },
-  kcalVs: { fontSize: 15 },
-  kcalValue: { fontSize: 22, fontWeight: '800', fontVariant: ['tabular-nums'] },
+  // Same width as the macros; calories are just set smaller to fit four digits.
+  kcalCol: {},
+  kcalVs: { fontSize: 13 },
+  kcalValue: { fontSize: 20, fontWeight: '800', fontVariant: ['tabular-nums'] },
   diff: { fontSize: 11, fontWeight: '700' },
   vsValue: { fontSize: 18, fontWeight: '700', fontVariant: ['tabular-nums'] },
   macroLetter: { fontSize: 13, fontWeight: '800', letterSpacing: 1, marginBottom: 2 },
@@ -952,17 +966,12 @@ const styles = StyleSheet.create({
   // Over the cards below it, for the dropdowns.
   raisedCard: { zIndex: 20 },
   training: { flexDirection: 'row', marginTop: 18, marginBottom: 8, zIndex: 10 },
-  pickRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexWrap: 'wrap',
-    gap: 4,
-    rowGap: 6,
-  },
+  fieldInline: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 3 },
+  fieldStacked: { alignItems: 'center', gap: 2 },
+  crossRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'center', gap: 8 },
   trainingCol: { flex: 1, alignItems: 'center', gap: 10 },
   minutesBox: {
-    width: 44,
+    width: 40,
     height: 34,
     borderRadius: 10,
     borderWidth: StyleSheet.hairlineWidth * 2,
