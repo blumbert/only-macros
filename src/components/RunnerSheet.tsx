@@ -37,7 +37,7 @@ import {
   weekFor,
   type DayKm,
 } from '../fueling/training';
-import { calories, isEmpty, sumDay, type Log, type Totals } from '../storage';
+import { isEmpty, sumDay, type Log, type Totals } from '../storage';
 import { formatNumber, MACROS, useTheme } from '../theme';
 import { Dropdown, range as optionRange } from './Dropdown';
 import { RunnerProfileForm } from './RunnerProfileForm';
@@ -544,14 +544,12 @@ function DayTargetsCard({
       </Text>
 
       {past ? (
-        <Compare target={{ kcal: t.kcal, ...grams }} eaten={sumDay(log[day])} />
+        <Compare target={grams} eaten={sumDay(log[day])} />
       ) : (
         <>
-          {/* Carbs, protein and fat lead; calories are just what they add up
-              to, so they sit small on the right. The side columns match in
-              width so the three macros stay centred. */}
-          {/* Letters, then numbers on a shared baseline, so the smaller
-              calories figure lines up with the macros. */}
+          {/* Just carbs, protein and fat: calories are only what they add up
+              to. "Targets" and "Today" label the rows on the left; the right
+              column matches its width so the macros stay centred. */}
           <View style={styles.macroRow}>
             <View style={styles.sideCol} />
             {MACROS.map((m) => (
@@ -559,12 +557,12 @@ function DayTargetsCard({
                 <Text style={[styles.macroLetter, { color: c.macro[m.key] }]}>{m.letter}</Text>
               </View>
             ))}
-            <View style={[styles.sideCol, styles.kcalCol]}>
-              <Text style={[styles.macroLetter, { color: c.muted }]}>KCAL</Text>
-            </View>
+            <View style={styles.sideCol} />
           </View>
           <View style={styles.valueRow}>
-            <View style={styles.sideCol} />
+            <View style={styles.sideCol}>
+              <Text style={[styles.vsLabel, { color: c.muted }]}>Targets</Text>
+            </View>
             {MACROS.map((m) => (
               <View key={m.key} style={styles.macroCol}>
                 <Text style={[styles.macroValue, { color: c.text }]}>
@@ -573,9 +571,7 @@ function DayTargetsCard({
                 </Text>
               </View>
             ))}
-            <View style={[styles.sideCol, styles.kcalCol]}>
-              <Text style={[styles.kcalValue, { color: c.muted }]}>{formatNumber(t.kcal)}</Text>
-            </View>
+            <View style={styles.sideCol} />
           </View>
           {/* What's been logged today so far, under what's recommended. */}
           {offset === 0 ? (
@@ -591,11 +587,7 @@ function DayTargetsCard({
                   </Text>
                 </View>
               ))}
-              <View style={[styles.sideCol, styles.kcalCol]}>
-                <Text style={[styles.kcalValue, { color: c.faint }]}>
-                  {formatNumber(calories(eatenToday))}
-                </Text>
-              </View>
+              <View style={styles.sideCol} />
             </View>
           ) : null}
         </>
@@ -656,23 +648,19 @@ function Compare({
   target,
   eaten,
 }: {
-  target: { kcal: number; c: number; p: number; f: number };
+  target: { c: number; p: number; f: number };
   eaten: Totals;
 }) {
   const { c } = useTheme();
   const logged = !isEmpty(eaten);
-  const eatenKcal = Math.round(calories(eaten));
-  const cols = [
-    ...MACROS.map((m) => ({
-      key: m.key,
-      head: m.letter,
-      color: c.macro[m.key],
-      target: target[m.key],
-      eaten: Math.round(eaten[m.key]),
-      unit: 'g',
-    })),
-    { key: 'kcal', head: 'KCAL', color: c.muted, target: target.kcal, eaten: eatenKcal, unit: '' },
-  ];
+  const cols = MACROS.map((m) => ({
+    key: m.key,
+    head: m.letter,
+    color: c.macro[m.key],
+    target: target[m.key],
+    eaten: Math.round(eaten[m.key]),
+    unit: 'g',
+  }));
   const signed = (n: number) => (n > 0 ? `+${formatNumber(n)}` : n < 0 ? `−${formatNumber(-n)}` : '0');
 
   const row = (label: string, value: (col: (typeof cols)[number]) => string, color: string, bold?: boolean) => (
@@ -954,12 +942,10 @@ const styles = StyleSheet.create({
   valueRow: { flexDirection: 'row', alignItems: 'baseline' },
   vsRow: { marginTop: 6, alignItems: 'baseline' },
   sideCol: { width: 48, justifyContent: 'flex-end' },
-  kcalCol: { alignItems: 'center', justifyContent: 'flex-start' },
-  kcalValue: { fontSize: 15, fontWeight: '700', fontVariant: ['tabular-nums'] },
   vsLabel: { fontSize: 12, fontWeight: '700' },
-  vsValue: { fontSize: 16, fontWeight: '700', fontVariant: ['tabular-nums'] },
-  macroLetter: { fontSize: 11, fontWeight: '800', letterSpacing: 1, marginBottom: 2 },
-  macroValue: { fontSize: 22, fontWeight: '700', fontVariant: ['tabular-nums'] },
+  vsValue: { fontSize: 18, fontWeight: '700', fontVariant: ['tabular-nums'] },
+  macroLetter: { fontSize: 13, fontWeight: '800', letterSpacing: 1, marginBottom: 2 },
+  macroValue: { fontSize: 30, fontWeight: '800', fontVariant: ['tabular-nums'] },
   compare: { marginTop: 12, gap: 6 },
   compareRow: { flexDirection: 'row', alignItems: 'baseline' },
   compareLabel: { flex: 1.5, fontSize: 12, fontWeight: '600' },
