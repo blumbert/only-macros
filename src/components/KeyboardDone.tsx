@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import {
+  Dimensions,
   Keyboard,
   Platform,
   ScrollView,
@@ -17,33 +18,47 @@ const stack: object[] = [];
 /** Clear space kept between the field being typed in and the Done bar. */
 const GAP = 16;
 
+type Measurable = {
+  measureInWindow?: (cb: (x: number, y: number, w: number, h: number) => void) => void;
+};
+
 /**
  * A ScrollView for any screen with text fields: while the keyboard is up, it
  * scrolls the field being typed into so it sits above the keyboard and its
  * Done bar (DoneTextInput's, which iOS counts as part of the keyboard).
+ *
+ * Every screen and sheet puts this view at its very bottom, which is the
+ * bottom of the screen, so the keyboard covers exactly its own height of it.
+ * Positions are only ever compared with each other (the field against this
+ * view), never with the keyboard's screen position: inside a page sheet,
+ * "window" positions are measured from the top of the sheet, not the screen,
+ * and mixing the two left fields hidden behind the bar by the sheet's offset.
  */
 export function KeyboardScrollView({ children, onScroll, onTouchEnd, ...props }: ScrollViewProps & { children: ReactNode }) {
   const wrap = useRef<View>(null);
   const scroll = useRef<ScrollView>(null);
   const scrollY = useRef(0);
-  // Top of the keyboard on screen while it's up, else null.
-  const keyboardTop = useRef<number | null>(null);
-  // How much of this view the keyboard covers, so the bar can sit on it and
-  // the content can scroll clear of it.
+  // Height of the keyboard (with its Done bar) while it's up, else null.
+  const keyboardHeight = useRef<number | null>(null);
+  // How much of this view the keyboard covers, so the content can scroll
+  // clear of it.
   const [covered, setCovered] = useState<number | null>(null);
 
   /** Scroll the focused field up above the Done bar, if it's hidden. */
   const reveal = () => {
-    const top = keyboardTop.current;
-    const input = TextInput.State.currentlyFocusedInput() as unknown as {
-      measureInWindow?: (cb: (x: number, y: number, w: number, h: number) => void) => void;
-    } | null;
-    if (top === null || !input?.measureInWindow) return;
-    input.measureInWindow((_x, y, _w, h) => {
-      const limit = top - GAP;
-      if (y + h > limit) {
-        scroll.current?.scrollTo({ y: scrollY.current + (y + h - limit), animated: true });
-      }
+    const kb = keyboardHeight.current;
+    const input = TextInput.State.currentlyFocusedInput() as unknown as Measurable | null;
+    if (kb === null || !input?.measureInWindow || !wrap.current) return;
+    wrap.current.measureInWindow((_wx, wy, _ww, wh) => {
+      input.measureInWindow!((_x, y, _w, h) => {
+        // Bottom of the field, and the lowest it may sit, both measured from
+        // the top of this view.
+        const bottom = y - wy + h;
+        const limit = wh - kb - GAP;
+        if (bottom > limit) {
+          scroll.current?.scrollTo({ y: scrollY.current + (bottom - limit), animated: true });
+        }
+      });
     });
   };
 
@@ -52,22 +67,32 @@ export function KeyboardScrollView({ children, onScroll, onTouchEnd, ...props }:
     const me = {};
     stack.push(me);
     const onTop = () => stack[stack.length - 1] === me;
-    const show = Keyboard.addListener('keyboardWillShow', (e: KeyboardEvent) => {
+    const update = (e: KeyboardEvent) => {
       if (!onTop()) return;
-      const top = e.endCoordinates.screenY;
-      keyboardTop.current = top;
-      wrap.current?.measureInWindow((_x, y, _w, h) => {
-        setCovered(Math.max(y + h - top, 0));
-        // Once the spacer below has been laid out, there's room to scroll.
-        setTimeout(reveal, 60);
-      });
+      // From the keyboard's top to the bottom of the screen: the bar counts.
+      const screenH = Dimensions.get('screen').height;
+      const kb = Math.max(screenH - e.endCoordinates.screenY, e.endCoordinates.height, 0);
+      if (kb <= 0) return;
+      keyboardHeight.current = kb;
+      setCovered(kb);
+      // Once the spacer below has been laid out, there's room to scroll.
+      setTimeout(reveal, 60);
+    };
+    // The Done bar can arrive a moment after the keyboard, and switching
+    // between fields can change the keyboard's height, so every change counts.
+    const show = Keyboard.addListener('keyboardWillShow', update);
+    const shown = Keyboard.addListener('keyboardDidShow', update);
+    const change = Keyboard.addListener('keyboardDidChangeFrame', (e: KeyboardEvent) => {
+      if (keyboardHeight.current !== null) update(e);
     });
     const hide = Keyboard.addListener('keyboardWillHide', () => {
-      keyboardTop.current = null;
+      keyboardHeight.current = null;
       setCovered(null);
     });
     return () => {
       show.remove();
+      shown.remove();
+      change.remove();
       hide.remove();
       stack.splice(stack.indexOf(me), 1);
     };
@@ -87,7 +112,7 @@ export function KeyboardScrollView({ children, onScroll, onTouchEnd, ...props }:
         // Tapping from one field to the next doesn't always move the keyboard,
         // so check the new field after every tap while it's up.
         onTouchEnd={(e) => {
-          if (keyboardTop.current !== null) setTimeout(reveal, 120);
+          if (keyboardHeight.current !== null) setTimeout(reveal, 120);
           onTouchEnd?.(e);
         }}
       >
