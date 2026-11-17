@@ -36,7 +36,7 @@ serving size if you give one — are saved the same way, and so is the name of a
 food when you add it to a day.
 
 If you connect Apple Health, the distance you ran and the minutes and energy
-of your other workouts on each recent day are saved the same way.
+of your cardio workouts on each recent day are saved the same way.
 
 ## AI food search (Premium)
 
@@ -83,10 +83,11 @@ Updates are signed, and the app installs only ones signed by the developer.
 
 If you connect Apple Health on the Runner fueling page, the app reads your
 workouts from the last seven days. For runs it uses the date and distance, to
-fill in how far you ran each day. For other workouts (cycling, swimming, the
-gym and so on) it uses the date, duration and energy burned, to fill in that
-day's cross-training. These are used to calculate your targets on your phone
-and are never sent anywhere. The app does not write anything to Apple Health,
+fill in how far you ran each day. For cardio workouts (cycling, the elliptical,
+swimming, rowing and so on) it uses the date, duration and energy burned, to
+fill in that day's cross-training. These are used to calculate your targets on your phone
+and are never sent anywhere. Other workouts, like walks, yoga or weights, are
+not used. The app does not write anything to Apple Health,
 and it reads no other health data. You can stop it in the app,
 and turn off its access any time in Settings › Health › Data Access & Devices.
 

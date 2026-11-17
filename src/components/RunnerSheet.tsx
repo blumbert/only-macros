@@ -197,6 +197,11 @@ export function RunnerSheet({ visible, onClose, log, today }: Props) {
   const [healthBusy, setHealthBusy] = useState(false);
   const [healthError, setHealthError] = useState<string | null>(null);
 
+  const outsideWindow = (xt: HealthXt, day: DayKey): HealthXt => {
+    const read = new Set(healthWindow(day, RULES.loggedEa.lookbackDays));
+    return Object.fromEntries(Object.entries(xt).filter(([d]) => !read.has(d)));
+  };
+
   const syncHealth = useCallback(async () => {
     setHealthBusy(true);
     setHealthError(null);
@@ -208,7 +213,9 @@ export function RunnerSheet({ visible, onClose, log, today }: Props) {
       setHealth({
         connected: true,
         days: read.visible ? { ...prev.days, ...read.days } : {},
-        xt: { ...(prev.xt ?? {}), ...read.xt },
+        // Days this sync read are replaced outright, so a yoga or walk entry
+        // from before (or a deleted workout) doesn't linger.
+        xt: { ...outsideWindow(prev.xt ?? {}, today), ...read.xt },
         syncedAt: Date.now(),
       });
     } catch {

@@ -30,6 +30,26 @@ import { RULES } from './rules';
 const RUNNING = 37;
 
 /**
+ * The workouts that count as cross-training: sustained cardio that stands in
+ * for running. Strength, yoga, walking, hiking, team sports and interval
+ * classes don't, so they're left out. Values are HKWorkoutActivityType's.
+ */
+const CROSS_TRAINING = new Set([
+  13, // cycling
+  16, // elliptical
+  31, // paddle sports (kayaking, canoeing, paddleboarding)
+  35, // rowing
+  44, // stair climbing (machine)
+  46, // swimming
+  60, // cross-country skiing
+  68, // stairs
+  69, // step training
+  73, // mixed cardio
+  74, // hand cycling
+  82, // swim-bike-run
+]);
+
+/**
  * How far back a sync looks to decide whether Health can see the runner's
  * runs at all. iOS never tells an app its read access was denied — a denial
  * looks exactly like an empty store — so an empty answer over two months is
@@ -85,7 +105,7 @@ const toMeters = (q: { unit?: string; quantity?: number } | undefined): number =
 };
 
 /**
- * Runs, and cross-training (every other kind of workout). `visible` is about
+ * Runs, and cross-training (sustained cardio workouts). `visible` is about
  * runs only; cross-training comes back either way.
  */
 export type HealthRead =
@@ -112,7 +132,8 @@ const toKcal = (q: { unit?: string; quantity?: number } | undefined): number => 
 /**
  * Kilometres run on each of the last 7 days and today, from every running
  * workout in Health — Apple Watch, and any app that saves its runs there —
- * and the cross-training on those days, from every other workout.
+ * and the cross-training on those days, from cardio workouts like cycling,
+ * the elliptical and swimming.
  */
 export async function readRecentRuns(today: DayKey): Promise<HealthRead> {
   const hk = healthKit();
@@ -128,7 +149,7 @@ export async function readRecentRuns(today: DayKey): Promise<HealthRead> {
   const startOf = (w: any) => (w.startDate instanceof Date ? w.startDate : new Date(w.startDate));
   const covered = healthWindow(today, RULES.loggedEa.lookbackDays);
   const others: HealthWorkout[] = all
-    .filter((w) => w.workoutActivityType !== RUNNING)
+    .filter((w) => CROSS_TRAINING.has(w.workoutActivityType))
     .map((w) => ({
       start: startOf(w),
       minutes: toMinutes(w.duration),
