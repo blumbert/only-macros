@@ -160,7 +160,7 @@ describe('cross-training', () => {
     expect(crossTrainingKcal(60, 30, 10)).toBe(300);
     // Out-of-range effort is held to 1–10; no effort means moderate.
     expect(crossTrainingKcal(60, 60, 14)).toBe(600);
-    expect(crossTrainingKcal(60, 60)).toBe(300);
+    expect(crossTrainingKcal(60, 60)).toBe(360);
   });
 
   it('adds up each day’s non-running workouts from Health', () => {
@@ -191,7 +191,7 @@ describe('cross-training', () => {
       source: 'health',
     });
     // A Health workout with no energy recorded is costed at a moderate effort.
-    expect(dayCrossTraining('2026-10-21', manual, health, 60).kcal).toBe(150);
+    expect(dayCrossTraining('2026-10-21', manual, health, 60).kcal).toBe(180);
     expect(dayCrossTraining('2026-10-22', manual, health, 60).source).toBe('none');
   });
 

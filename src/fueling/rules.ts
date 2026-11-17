@@ -47,10 +47,12 @@ export const RULES = {
    * walking), 5 about 6 (steady cycling, swimming, the elliptical) and 10
    * about 11 (hard rowing, racing on the bike), less the 1 MET of resting.
    * The straight line is judgement, fitted to the Compendium's values.
-   * Workouts from Apple Health use their own measured energy instead.
+   * Workouts from Apple Health use their own measured energy instead. With
+   * no effort given (or a Health workout with no energy), 6 is assumed:
+   * moderate, a little above steady.
    * [ainsworth2011]
    */
-  crossTraining: { kcalPerKgHourPerEffort: 1, defaultEffort: 5, minEffort: 1, maxEffort: 10 },
+  crossTraining: { kcalPerKgHourPerEffort: 1, defaultEffort: 6, minEffort: 1, maxEffort: 10 },
 
   /**
    * Body fat assumed when none is entered — typical of trained distance

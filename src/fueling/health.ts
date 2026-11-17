@@ -31,17 +31,19 @@ const RUNNING = 37;
 
 /**
  * The workouts that count as cross-training: sustained cardio that stands in
- * for running. Strength, yoga, walking, hiking, team sports and interval
- * classes don't, so they're left out. Values are HKWorkoutActivityType's.
+ * for running. Strength, yoga, walking, hiking and team sports don't, so
+ * they're left out. Values are HKWorkoutActivityType's.
  */
 const CROSS_TRAINING = new Set([
   13, // cycling
   16, // elliptical
   31, // paddle sports (kayaking, canoeing, paddleboarding)
   35, // rowing
+  39, // skating (inline and ice)
   44, // stair climbing (machine)
   46, // swimming
   60, // cross-country skiing
+  63, // high-intensity interval training
   68, // stairs
   69, // step training
   73, // mixed cardio
