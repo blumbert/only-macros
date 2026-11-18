@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { addDays, shortDate, WEEKDAY_INITIALS, type DayKey } from '../date';
+import { addDays, shortDate, type DayKey } from '../date';
 import type { Units } from '../fueling/profile';
 import { RULES, type DayType } from '../fueling/rules';
 import {
@@ -36,7 +36,9 @@ type Props = {
   onSetDayXt?: (day: DayKey, xt: { min: number; effort: number } | null) => void;
 };
 
-const WEEKDAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+// Training weeks run Monday to Sunday (the calendar still starts on Sunday).
+const WEEKDAY_NAMES = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+const WEEKDAY_INITIALS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
 export function TrainingWeekEditor({
   weeks,
@@ -361,8 +363,8 @@ function HowItWorks({ units }: { units: Units }) {
       <Text style={head}>Your {dist}</Text>
       <Text style={body}>
         The long run gets its own {dist}. The rest of your total is split evenly
-        across your easy and workout days, and shows as each day&apos;s {dist}
-        in Daily Targets.
+        across your easy and workout days, and shows as each day&apos;s{' '}
+        {dist} in Daily Targets.
       </Text>
       <Text style={body}>
         Ran something different? Change that day&apos;s {dist} in Daily

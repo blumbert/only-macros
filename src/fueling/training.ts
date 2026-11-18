@@ -2,18 +2,19 @@ import { addDays, fromDayKey, toDayKey, type DayKey } from '../date';
 import type { DayType } from './rules';
 
 /**
- * One week of training, Sunday to Saturday to match the calendar. Distances
+ * One week of training, Monday to Sunday, the way most runners plan, with
+ * the weekend's long run closing it out. Distances
  * are stored in km whatever unit the runner types in, so the model never has
  * to care which one they use.
  */
 export type Week = {
   km: number;
   longRunKm: number;
-  /** Index 0 is Sunday. Anything not marked is an easy day. */
+  /** Index 0 is Monday. Anything not marked is an easy day. */
   days: DayType[];
   /**
    * Cross-training planned for the week, on top of whatever running each day
-   * has: minutes and a 1–10 effort for each day (index 0 is Sunday; 0
+   * has: minutes and a 1–10 effort for each day (index 0 is Monday; 0
    * minutes for none).
    */
   xt?: WeekXt;
@@ -31,11 +32,27 @@ export const EMPTY_WEEK: Week = {
   days: ['easy', 'easy', 'easy', 'easy', 'easy', 'easy', 'easy'],
 };
 
-/** The Sunday that starts the week `day` falls in. */
+/** Where `day` falls in its training week: 0 for Monday to 6 for Sunday. */
+export function dayIndex(day: DayKey): number {
+  return (fromDayKey(day).getDay() + 6) % 7;
+}
+
+/** The Monday that starts the week `day` falls in. */
 export function weekKey(day: DayKey): DayKey {
-  const d = fromDayKey(day);
-  d.setDate(d.getDate() - d.getDay());
-  return toDayKey(d);
+  return addDays(day, -dayIndex(day));
+}
+
+/**
+ * A week saved before weeks started on Monday: keyed by its Sunday, with
+ * Sunday first. It becomes the Monday-to-Sunday week starting the next day,
+ * each weekday keeping what it was (so the Sunday moves to the end): runners
+ * repeat the same pattern week to week, so that's the week they meant.
+ */
+export function fromSundayWeek(key: DayKey, week: Week): { key: DayKey; week: Week } {
+  const turn = <T>(a: T[]): T[] => [...a.slice(1), a[0]];
+  const moved: Week = { ...week, days: turn(week.days) };
+  if (week.xt) moved.xt = { min: turn(week.xt.min), effort: turn(week.xt.effort) };
+  return { key: addDays(key, 1), week: moved };
 }
 
 /**
@@ -126,7 +143,7 @@ export function plannedCrossTraining(
   day: DayKey,
 ): { min: number; effort: number } | null {
   const xt = weekFor(weeks, day)?.week.xt;
-  const i = fromDayKey(day).getDay();
+  const i = dayIndex(day);
   const min = xt?.min[i] ?? 0;
   return xt && min > 0 ? { min, effort: xt.effort[i] } : null;
 }
@@ -158,8 +175,8 @@ export function planFor(
       ? 7
       : start > weekKey(today)
         ? 0
-        : fromDayKey(today).getDay();
-  const index = fromDayKey(day).getDay();
+        : dayIndex(today);
+  const index = dayIndex(day);
   const km = dailyKm(found.week, set, firstOpen)[index];
   return {
     // A day with no running is a rest day whatever the plan called it: a long

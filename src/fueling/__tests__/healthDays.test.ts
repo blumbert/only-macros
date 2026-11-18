@@ -107,7 +107,8 @@ describe('weekFromHealth', () => {
     expect(weekFromHealth(health, today)).toEqual({
       km: 32,
       longRunKm: 16,
-      days: ['long', 'rest', 'easy', 'easy', 'rest', 'easy', 'rest'],
+      // Monday to Sunday.
+      days: ['rest', 'easy', 'easy', 'rest', 'easy', 'rest', 'long'],
     });
   });
 
@@ -116,7 +117,7 @@ describe('weekFromHealth', () => {
     expect(week).toEqual({
       km: 21,
       longRunKm: 0,
-      days: ['easy', 'rest', 'easy', 'rest', 'rest', 'rest', 'rest'],
+      days: ['rest', 'easy', 'rest', 'rest', 'rest', 'rest', 'easy'],
     });
   });
 
@@ -128,23 +129,23 @@ describe('weekFromHealth', () => {
   describe('withHealthWeeks', () => {
     it('stands in for this week and last week when nothing is entered', () => {
       const planned = withHealthWeeks({}, health, today);
-      expect(planned.fromHealth).toEqual(['2026-11-08', '2026-11-15']);
-      // 21 of the 32 are run by Tuesday; the rest splits over Wednesday and Friday.
+      expect(planned.fromHealth).toEqual(['2026-11-09', '2026-11-16']);
+      // Tuesday's 5 and Sunday's 16-long run leave 11 of the 32 for Wednesday and Friday.
       const plan = planFor(planned.weeks, today, mergeDayKm({}, health, today), today);
       expect(plan).toEqual({ type: 'easy', km: 5.5, set: false });
     });
 
     it('leaves an entered week alone', () => {
       const entered: Week = { km: 40, longRunKm: 0, days: Array(7).fill('easy') };
-      const planned = withHealthWeeks({ '2026-11-15': entered }, health, today);
-      expect(planned.weeks['2026-11-15']).toBe(entered);
-      expect(planned.fromHealth).toEqual(['2026-11-08']);
+      const planned = withHealthWeeks({ '2026-11-16': entered }, health, today);
+      expect(planned.weeks['2026-11-16']).toBe(entered);
+      expect(planned.fromHealth).toEqual(['2026-11-09']);
     });
 
     it('replaces an entered week with no mileage in it', () => {
       const empty: Week = { km: 0, longRunKm: 0, days: Array(7).fill('easy') };
-      const planned = withHealthWeeks({ '2026-11-15': empty }, health, today);
-      expect(planned.weeks['2026-11-15'].km).toBe(32);
+      const planned = withHealthWeeks({ '2026-11-16': empty }, health, today);
+      expect(planned.weeks['2026-11-16'].km).toBe(32);
     });
 
     it('changes nothing without Health', () => {
@@ -215,14 +216,14 @@ describe('cross-training', () => {
 });
 
 describe('planned cross-training', () => {
-  // Week of Sunday 15 November 2026: cross-training Wednesday and Friday.
+  // Week of Monday 16 November 2026: cross-training Wednesday and Friday.
   const week: Week = {
     km: 30,
     longRunKm: 0,
     days: Array(7).fill('easy'),
-    xt: { min: [0, 0, 0, 40, 0, 25, 0], effort: [5, 5, 5, 6, 5, 8, 5] },
+    xt: { min: [0, 0, 40, 0, 25, 0, 0], effort: [5, 5, 6, 5, 8, 5, 5] },
   };
-  const weeks = { '2026-11-15': week };
+  const weeks = { '2026-11-16': week };
 
   it('gives each day its own minutes and effort', () => {
     expect(plannedCrossTraining(weeks, '2026-11-18')).toEqual({ min: 40, effort: 6 });

@@ -3,7 +3,9 @@ import { describe, expect, it } from '@jest/globals';
 import {
   checkWeek,
   dailyKm,
+  dayIndex,
   EMPTY_WEEK,
+  fromSundayWeek,
   KM_PER_MI,
   planFor,
   setDayType,
@@ -13,15 +15,42 @@ import {
 } from '../training';
 
 describe('weekKey', () => {
-  it('maps any day to the Sunday that starts its week', () => {
-    expect(weekKey('2026-09-24')).toBe('2026-09-20'); // Thursday
-    expect(weekKey('2026-09-20')).toBe('2026-09-20'); // Sunday itself
-    expect(weekKey('2026-09-26')).toBe('2026-09-20'); // Saturday
+  it('maps any day to the Monday that starts its week', () => {
+    expect(weekKey('2026-09-24')).toBe('2026-09-21'); // Thursday
+    expect(weekKey('2026-09-21')).toBe('2026-09-21'); // Monday itself
+    expect(weekKey('2026-09-27')).toBe('2026-09-21'); // Sunday ends it
   });
 
   it('crosses month and year boundaries', () => {
-    expect(weekKey('2026-10-01')).toBe('2026-09-27');
-    expect(weekKey('2027-01-02')).toBe('2026-12-27');
+    expect(weekKey('2026-10-01')).toBe('2026-09-28');
+    expect(weekKey('2027-01-02')).toBe('2026-12-28');
+  });
+
+  it('numbers the days Monday 0 to Sunday 6', () => {
+    expect(dayIndex('2026-09-21')).toBe(0);
+    expect(dayIndex('2026-09-24')).toBe(3);
+    expect(dayIndex('2026-09-27')).toBe(6);
+  });
+});
+
+describe('fromSundayWeek', () => {
+  it('moves a Sunday-first week to the Monday after, each weekday keeping its plan', () => {
+    const old: Week = {
+      km: 50,
+      longRunKm: 20,
+      // Sunday long run, Monday rest, Wednesday workout.
+      days: ['long', 'rest', 'easy', 'workout', 'easy', 'easy', 'easy'],
+      xt: { min: [0, 30, 0, 0, 0, 0, 45], effort: [5, 4, 5, 5, 5, 5, 7] },
+    };
+    expect(fromSundayWeek('2026-09-20', old)).toEqual({
+      key: '2026-09-21',
+      week: {
+        km: 50,
+        longRunKm: 20,
+        days: ['rest', 'easy', 'workout', 'easy', 'easy', 'easy', 'long'],
+        xt: { min: [30, 0, 0, 0, 0, 45, 0], effort: [4, 5, 5, 5, 5, 7, 5] },
+      },
+    });
   });
 });
 
@@ -163,20 +192,20 @@ describe('weekFor', () => {
   const b: Week = { ...EMPTY_WEEK, km: 80 };
 
   it('uses the week that was entered for that day', () => {
-    expect(weekFor({ '2026-09-20': b }, '2026-09-24')).toEqual({
+    expect(weekFor({ '2026-09-21': b }, '2026-09-24')).toEqual({
       week: b,
-      key: '2026-09-20',
+      key: '2026-09-21',
       carried: false,
     });
   });
 
   it('carries the most recent earlier week forward, and says so', () => {
-    const weeks = { '2026-09-06': a, '2026-09-13': b };
-    expect(weekFor(weeks, '2026-09-24')).toEqual({ week: b, key: '2026-09-13', carried: true });
+    const weeks = { '2026-09-07': a, '2026-09-14': b };
+    expect(weekFor(weeks, '2026-09-24')).toEqual({ week: b, key: '2026-09-14', carried: true });
   });
 
   it('never carries a later week backwards', () => {
-    expect(weekFor({ '2026-09-27': b }, '2026-09-24')).toBeNull();
+    expect(weekFor({ '2026-09-28': b }, '2026-09-24')).toBeNull();
   });
 
   it('has nothing to go on before the first week', () => {
@@ -189,10 +218,10 @@ describe('planFor', () => {
     const week: Week = {
       km: 60,
       longRunKm: 20,
-      days: ['long', 'rest', 'workout', 'easy', 'easy', 'rest', 'easy'],
+      days: ['rest', 'workout', 'easy', 'easy', 'rest', 'easy', 'long'],
     };
-    // 2026-09-22 is a Tuesday — index 2.
-    expect(planFor({ '2026-09-20': week }, '2026-09-22')).toEqual({
+    // 2026-09-22 is a Tuesday — index 1.
+    expect(planFor({ '2026-09-21': week }, '2026-09-22')).toEqual({
       type: 'workout',
       km: 10,
       set: false,
@@ -202,9 +231,10 @@ describe('planFor', () => {
   const week: Week = {
     km: 50,
     longRunKm: 20,
-    days: ['long', 'rest', 'easy', 'workout', 'easy', 'rest', 'easy'],
+    // Monday rest, Wednesday workout, Friday rest, Sunday long run.
+    days: ['rest', 'easy', 'workout', 'easy', 'rest', 'easy', 'long'],
   };
-  const weeks = { '2026-09-20': week };
+  const weeks = { '2026-09-21': week };
 
   it('returns a distance set for the day, and says so', () => {
     expect(planFor(weeks, '2026-09-22', { '2026-09-22': 3 })).toEqual({
@@ -215,8 +245,8 @@ describe('planFor', () => {
   });
 
   it('treats a running day set to 0 as a rest day', () => {
-    // Sunday 9/20 is the long run.
-    expect(planFor(weeks, '2026-09-20', { '2026-09-20': 0 })).toEqual({
+    // Sunday 9/27 is the long run.
+    expect(planFor(weeks, '2026-09-27', { '2026-09-27': 0 })).toEqual({
       type: 'rest',
       km: 0,
       set: true,
@@ -238,7 +268,7 @@ describe('planFor', () => {
   });
 
   it('applies set days by date, not to the week the plan was carried from', () => {
-    // The 9/27 week borrows 9/20's plan; a day set in 9/20 doesn't follow it.
+    // The 9/28 week borrows 9/21's plan; a day set in 9/21 doesn't follow it.
     expect(planFor(weeks, '2026-09-29', { '2026-09-22': 0 })?.km).toBeCloseTo(7.5);
   });
 });

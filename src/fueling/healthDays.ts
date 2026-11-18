@@ -1,7 +1,7 @@
 import { addDays, fromDayKey, toDayKey, type DayKey } from '../date';
 import { crossTrainingKcal } from './model';
 import { RULES, type DayType } from './rules';
-import { weekFor, weekKey, type DayKm, type Week, type Weeks } from './training';
+import { dayIndex, weekFor, weekKey, type DayKm, type Week, type Weeks } from './training';
 
 /** A run as Apple Health reports it: when it started, and how far. */
 export type HealthRun = { start: Date; meters: number };
@@ -74,7 +74,7 @@ export function weekFromHealth(health: Record<DayKey, number>, today: DayKey): W
   const kmByIndex: number[] = Array(7).fill(0);
   for (let back = 1; back <= 7; back++) {
     const day = addDays(today, -back);
-    kmByIndex[fromDayKey(day).getDay()] = health[day] ?? 0;
+    kmByIndex[dayIndex(day)] = health[day] ?? 0;
   }
   const runs = kmByIndex.filter((km) => km > 0).length;
   if (!runs) return null;

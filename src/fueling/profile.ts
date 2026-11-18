@@ -1,11 +1,11 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useCallback, useEffect, useState } from 'react';
 
-import { isDayKey, type DayKey } from '../date';
+import { fromDayKey, isDayKey, type DayKey } from '../date';
 import type { HealthXt, ManualXt } from './healthDays';
 import type { BoneHistory, Cycle, Goal, Profile, Sex } from './model';
 import { RULES, type DayType } from './rules';
-import type { DayKm, Week, Weeks } from './training';
+import { fromSundayWeek, type DayKm, type Week, type Weeks } from './training';
 
 /** How distances and weight are shown and typed. Storage is always km and kg. */
 export type Units = 'imperial' | 'metric';
@@ -147,7 +147,12 @@ function sanitize(raw: unknown): RunnerState {
   if (r.weeks && typeof r.weeks === 'object') {
     for (const [key, value] of Object.entries(r.weeks as Record<string, unknown>)) {
       const week = sanitizeWeek(value);
-      if (isDayKey(key) && week) weeks[key] = week;
+      if (!isDayKey(key) || !week) continue;
+      if (fromDayKey(key).getDay() === 0) {
+        // Saved when weeks started on Sunday. A Monday week already there wins.
+        const moved = fromSundayWeek(key, week);
+        if (!weeks[moved.key]) weeks[moved.key] = moved.week;
+      } else weeks[key] = week;
     }
   }
   const h = r.health && typeof r.health === 'object' ? (r.health as Record<string, unknown>) : {};
