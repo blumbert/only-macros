@@ -29,7 +29,7 @@ import {
   type Guard,
   type Profile,
 } from '../fueling/model';
-import { takeMondayNotice, useRunner, type Units } from '../fueling/profile';
+import { markMondayNoticeSeen, mondayNoticeDue, useRunner, type Units } from '../fueling/profile';
 import { RULES, SOURCES, type DayType } from '../fueling/rules';
 import {
   checkWeek,
@@ -150,20 +150,35 @@ export function RunnerSheet({ visible, onClose, log, today }: Props) {
   const profile = runner.profile;
 
   // Once ever, for a runner whose weeks were saved Sunday-first: say they now
-  // run Monday to Sunday.
+  // run Monday to Sunday. Only after the sheet has finished sliding up (iOS
+  // won't show an alert mid-animation), and only marked seen once tapped away.
+  const [sheetShown, setSheetShown] = useState(false);
   const mondayAsked = useRef(false);
   useEffect(() => {
-    if (!visible || !runner.hydrated || mondayAsked.current) return;
+    if (!visible) setSheetShown(false);
+  }, [visible]);
+  useEffect(() => {
+    if (!sheetShown || !runner.hydrated || mondayAsked.current) return;
     mondayAsked.current = true;
-    void takeMondayNotice(runner.weeks).then((show) => {
-      if (!show) return;
-      Alert.alert(
-        'Weeks now start on Monday',
-        'Your training weeks now run Monday to Sunday, so the weekend’s long run ends the week. Your plan came across as it was: each weekday kept its run type and cross-training.',
-        [{ text: 'Got it' }],
-      );
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    void mondayNoticeDue(runner.weeks).then((due) => {
+      if (!due) return;
+      timer = setTimeout(() => {
+        timer = undefined;
+        Alert.alert(
+          'Weeks now start on Monday',
+          'Your training weeks now run Monday to Sunday, so the weekend’s long run ends the week. Your plan came across as it was: each weekday kept its run type and cross-training.',
+          [{ text: 'Got it', onPress: markMondayNoticeSeen }],
+          { onDismiss: markMondayNoticeSeen },
+        );
+      }, 400);
     });
-  }, [visible, runner.hydrated, runner.weeks]);
+    return () => {
+      if (timer) clearTimeout(timer);
+      // Closed before it showed: try again next time.
+      if (timer) mondayAsked.current = false;
+    };
+  }, [sheetShown, runner.hydrated, runner.weeks]);
 
   // Apple Health, when connected, speaks for each recent day's distance; a
   // distance set by hand still wins over it.
@@ -272,7 +287,10 @@ export function RunnerSheet({ visible, onClose, log, today }: Props) {
       animationType="slide"
       presentationStyle="pageSheet"
       onRequestClose={onClose}
-      onShow={() => setEditingProfile(false)}
+      onShow={() => {
+        setEditingProfile(false);
+        setSheetShown(true);
+      }}
     >
       <View
         style={[
