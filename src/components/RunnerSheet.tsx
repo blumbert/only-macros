@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Modal,
   Platform,
@@ -202,6 +202,11 @@ export function RunnerSheet({ visible, onClose, log, today }: Props) {
     return Object.fromEntries(Object.entries(xt).filter(([d]) => !read.has(d)));
   };
 
+  // The saved Health data, read through a ref: if the sync depended on it,
+  // every sync's save would start another sync, forever.
+  const healthRef = useRef(runner.health);
+  healthRef.current = runner.health;
+
   const syncHealth = useCallback(async () => {
     setHealthBusy(true);
     setHealthError(null);
@@ -209,7 +214,7 @@ export function RunnerSheet({ visible, onClose, log, today }: Props) {
       const read = await readRecentRuns(today);
       // Health only reads the last few days, so earlier days are kept from
       // previous syncs: past weeks show what was actually run.
-      const prev = runner.health;
+      const prev = healthRef.current;
       setHealth({
         connected: true,
         days: read.visible ? { ...prev.days, ...read.days } : {},
@@ -223,7 +228,7 @@ export function RunnerSheet({ visible, onClose, log, today }: Props) {
     } finally {
       setHealthBusy(false);
     }
-  }, [today, setHealth, runner.health]);
+  }, [today, setHealth]);
 
   // Every time the page opens, so the days are as fresh as the runs.
   useEffect(() => {
