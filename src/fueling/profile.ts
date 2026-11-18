@@ -171,10 +171,43 @@ function sanitize(raw: unknown): RunnerState {
   };
 }
 
+/**
+ * Whether the "weeks now start on Monday" note has been shown: 'due' once a
+ * Sunday-first week has been moved, 'seen' once shown. It's shown only once.
+ */
+const MONDAY_NOTICE_KEY = 'macrotracker.notice.mondayWeeks';
+/** The Monday the change shipped. Weeks before it were saved Sunday-first. */
+const MONDAY_SWITCH = '2026-11-16';
+
+/**
+ * True the one time the runner should be told their weeks moved to Monday:
+ * they had a week saved the old way. Marks it seen, so it never comes back.
+ */
+export async function takeMondayNotice(weeks: Weeks): Promise<boolean> {
+  try {
+    const flag = await AsyncStorage.getItem(MONDAY_NOTICE_KEY);
+    if (flag === 'seen') return false;
+    // 'due' from a move just made; an earlier week key catches a runner whose
+    // weeks were moved by the update before this note existed.
+    if (flag !== 'due' && !Object.keys(weeks).some((k) => k < MONDAY_SWITCH)) return false;
+    await AsyncStorage.setItem(MONDAY_NOTICE_KEY, 'seen');
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 async function load(): Promise<RunnerState> {
   try {
     const raw = await AsyncStorage.getItem(STORAGE_KEY);
-    return raw ? sanitize(JSON.parse(raw)) : EMPTY;
+    if (!raw) return EMPTY;
+    const parsed = JSON.parse(raw);
+    const old = parsed?.weeks && typeof parsed.weeks === 'object' ? Object.keys(parsed.weeks) : [];
+    if (old.some((k) => isDayKey(k) && fromDayKey(k).getDay() === 0)) {
+      const flag = await AsyncStorage.getItem(MONDAY_NOTICE_KEY);
+      if (flag !== 'seen') await AsyncStorage.setItem(MONDAY_NOTICE_KEY, 'due');
+    }
+    return sanitize(parsed);
   } catch {
     return EMPTY;
   }

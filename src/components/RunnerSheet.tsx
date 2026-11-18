@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
+  Alert,
   Modal,
   Platform,
   Pressable,
@@ -28,7 +29,7 @@ import {
   type Guard,
   type Profile,
 } from '../fueling/model';
-import { useRunner, type Units } from '../fueling/profile';
+import { takeMondayNotice, useRunner, type Units } from '../fueling/profile';
 import { RULES, SOURCES, type DayType } from '../fueling/rules';
 import {
   checkWeek,
@@ -147,6 +148,22 @@ export function RunnerSheet({ visible, onClose, log, today }: Props) {
   };
 
   const profile = runner.profile;
+
+  // Once ever, for a runner whose weeks were saved Sunday-first: say they now
+  // run Monday to Sunday.
+  const mondayAsked = useRef(false);
+  useEffect(() => {
+    if (!visible || !runner.hydrated || mondayAsked.current) return;
+    mondayAsked.current = true;
+    void takeMondayNotice(runner.weeks).then((show) => {
+      if (!show) return;
+      Alert.alert(
+        'Weeks now start on Monday',
+        'Your training weeks now run Monday to Sunday, so the weekend’s long run ends the week. Your plan came across as it was: each weekday kept its run type and cross-training.',
+        [{ text: 'Got it' }],
+      );
+    });
+  }, [visible, runner.hydrated, runner.weeks]);
 
   // Apple Health, when connected, speaks for each recent day's distance; a
   // distance set by hand still wins over it.
