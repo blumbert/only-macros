@@ -167,7 +167,7 @@ export function RunnerSheet({ visible, onClose, log, today }: Props) {
         timer = undefined;
         Alert.alert(
           'Weeks now start on Monday',
-          'Your training weeks now run Monday to Sunday, so the weekend’s long run ends the week. Your plan came across as it was: each weekday kept its run type and cross-training.',
+          'Your training weeks now run Monday to Sunday instead of Sunday to Saturday. Nothing in your plan changed: each day still has the same run and cross-training.',
           [{ text: 'Got it', onPress: markMondayNoticeSeen }],
           { onDismiss: markMondayNoticeSeen },
         );
